@@ -3,3 +3,8 @@ Cluster/Master/obj
 Cluster/Master/bin
 Client/obj
 Client/bin
+Cluster/Master/.vscode
+Client/.vscode
+Cluster/Node/.vscode
+.vscode
+Cluster/Master/.vs
