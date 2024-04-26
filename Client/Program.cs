@@ -2,8 +2,6 @@
 
 class Client{
 
-
-
     public static void Main(){
         Console.WriteLine("Ich werde der Client!");
     }

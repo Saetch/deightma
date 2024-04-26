@@ -1,0 +1,20 @@
+{
+    "configurations": [
+
+        {
+            "name": "C#: Client",
+            "type": "dotnet",
+            "request": "launch",
+            "projectPath": "${workspaceFolder}\\Client\\Client.csproj",
+            "launchConfigurationId": "TargetFramework=;Client"
+        },
+        {
+            "name": "C#: Master",
+            "type": "dotnet",
+            "request": "launch",
+            "projectPath": "${workspaceFolder}\\Cluster\\Master\\Master.csproj",
+        }
+
+
+    ]
+}

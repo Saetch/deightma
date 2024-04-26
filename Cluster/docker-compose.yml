@@ -1,0 +1,18 @@
+
+
+##use Master C# project
+
+version: '3.4'
+services:
+    master:
+      image: deightma_master
+      build:
+        context: ./Master
+        dockerfile: Dockerfile
+      ports:
+        - "5000:5000"
+      networks:
+        - distr-network
+networks:
+  distr-network:
+    driver: bridge
