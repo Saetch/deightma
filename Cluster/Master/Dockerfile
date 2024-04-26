@@ -1,5 +1,3 @@
-FROM mcr.microsoft.com/dotnet/runtime:8.0
-
 # Use the .NET SDK image for building
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 

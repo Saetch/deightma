@@ -5,12 +5,13 @@
 version: '3.4'
 services:
     master:
+      container_name: master
       image: deightma_master
       build:
         context: ./Master
         dockerfile: Dockerfile
       ports:
-        - "5000:5000"
+        - "5000:8080"
       networks:
         - distr-network
 networks:
