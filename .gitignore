@@ -12,3 +12,5 @@ Client/.vscode
 Cluster/Node/.vscode
 .vscode
 Cluster/Master/.vs
+Cluster/node_rs/.vscode
+Cluster/node_rs/target
