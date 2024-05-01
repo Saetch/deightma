@@ -11,7 +11,7 @@ services:
         context: ./Master
         dockerfile: Dockerfile
       ports:
-        - "5000:8080"
+        - "5000:5552"
       networks:
         - distr-network
 networks:
