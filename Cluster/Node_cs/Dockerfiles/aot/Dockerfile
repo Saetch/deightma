@@ -17,8 +17,6 @@ RUN apt-get update && \
 # Publish the application
 RUN dotnet publish -p:PublishAot=true -p:StripSymbols=true -c Release -o /app/publish -r linux-musl-x64
 
-RUN ls /app/publish
-RUN ls /app/publish/Node_cs
 # Switch to the runtime image
 FROM alpine:3.19 AS runtime
 RUN apk add libc6-compat
