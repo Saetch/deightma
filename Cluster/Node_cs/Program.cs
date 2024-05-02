@@ -1,12 +1,46 @@
+using System.ComponentModel;
+using System.Globalization;
 using System.Net;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.ObjectPool;
 using Microsoft.Extensions.Options;
 public class Program{
-        static int Main(String[] args){
+
+    //values relevant for operating
+    public static double[][] values;
+    public static int offsetX = 0;
+    public static int offsetY = 0;
+    public static int width = 2;
+    public static int height = 2;
+
+    public static int Main(String[] args){
+
+        //get environment variables to determine the data fields
+        try{
+            #pragma warning disable CS8604 // Possible null reference argument.
+            width = int.Parse(Environment.GetEnvironmentVariable("WIDTH"));
+            height = int.Parse(Environment.GetEnvironmentVariable("HEIGHT"));
+            offsetX = int.Parse(Environment.GetEnvironmentVariable("OFFSET_X"));
+            offsetY = int.Parse(Environment.GetEnvironmentVariable("OFFSET_Y"));   
+            #pragma warning restore CS8604 // Possible null reference argument.
+ 
+        } catch (Exception e){
+            Console.WriteLine("Error while parsing environment variables: " + e.Message);
+        }
+
+        values = new double[width][];
+        for (int i = 0; i < width; i++)
+        {
+            values[i] = new double[height];
+        }
+
+        initializeValues();
+
+
         var builder = WebApplication.CreateSlimBuilder(args);
 
         builder.Services.ConfigureHttpJsonOptions(options =>
@@ -20,13 +54,6 @@ public class Program{
 
         var app = builder.Build();
 
-        var sampleTodos = new Todo[] {
-            new(1, "Walk the dog"),
-            new(2, "Do the dishes", DateOnly.FromDateTime(DateTime.Now)),
-            new(3, "Do the laundry", DateOnly.FromDateTime(DateTime.Now.AddDays(1))),
-            new(4, "Clean the bathroom"),
-            new(5, "Clean the car", DateOnly.FromDateTime(DateTime.Now.AddDays(2)))
-        };
 
         app.MapGet("/getValue/{values}", (string values) =>
         {   
@@ -41,28 +68,49 @@ public class Program{
         app.Run();
 
         return 0;
-        }
+    }
 
-
-
-//dummy implementation of the getValue function. This function is to be replaced by the actual logic, calling the nodes in the network
-    static XYValues getValue(String input)
-{
-    var inputs = input.Split('_');
-    if (inputs.Length != 2)
-        throw new ArgumentException("Input must be in the format 'x_y'");
-   
-    double x = double.Parse(inputs[0]);
-    double y = double.Parse(inputs[1]);
-        return new XYValues
+    //dummy implementation to make sure the network works! TODO: implement actual initialization!
+    static void initializeValues()
+    {
+        Random random = new Random();
+        for (int i = 0; i < width; i++)
         {
-            X = double.Parse(inputs[0]),
-            Y = double.Parse(inputs[1]),
-            Value = Math.Sqrt(x * x + y * y)
-        };
+            for (int j = 0; j < height; j++)
+            {
+                values[i][j] = i + offsetX + j + offsetY;
+            }
+        }
+    }
+
+    static double calculateInterpolatedValue(double x, double y)
+    {
+        double actual_x = x - offsetX;
+        double actual_y = y - offsetY;
+
+        //dummy implementation to make sure the network works! TODO: implement actual interpolation
+        actual_x = Math.Round(actual_x);
+        actual_y = Math.Round(actual_y);
+        actual_x = Math.Max(0, Math.Min(width - 1, actual_x));
+        actual_y = Math.Max(0, Math.Min(height - 1, actual_y));
+        return values[(int)actual_x][(int)actual_y];
+    }
+
+    static XYValues getValue(string values)
+    {
+        string[] splitValues = values.Split("_");
+        double x = Double.Parse(splitValues[0].Replace(',', '.'), CultureInfo.InvariantCulture);
+        double y = Double.Parse(splitValues[1].Replace(',', '.'), CultureInfo.InvariantCulture);
+        if(splitValues.Length > 2){
+            throw new Exception("Too many values");
+        }        
+        double ret_value = calculateInterpolatedValue(x, y);
+        return new XYValues { X = x, Y = y, Value = ret_value };
+    }
 
 
-}
+
+
 }
 
 
@@ -78,11 +126,9 @@ class XYValues
 }
 
 
-public record Todo(int Id, string? Title, DateOnly? DueBy = null, bool IsComplete = false);
 
 
-
-[JsonSerializable(typeof(Todo[]))]
+[JsonSerializable(typeof(XYValues[]))]
 internal partial class AppJsonSerializerContext : JsonSerializerContext
 {
 

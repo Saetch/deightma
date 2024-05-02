@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.ObjectPool;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.DependencyInjection;
+using System.Globalization;
 public class Program{
         static int Main(String[] args){
         var builder = WebApplication.CreateSlimBuilder(args);
@@ -20,13 +22,6 @@ public class Program{
 
         var app = builder.Build();
 
-        var sampleTodos = new Todo[] {
-            new(1, "Walk the dog"),
-            new(2, "Do the dishes", DateOnly.FromDateTime(DateTime.Now)),
-            new(3, "Do the laundry", DateOnly.FromDateTime(DateTime.Now.AddDays(1))),
-            new(4, "Clean the bathroom"),
-            new(5, "Clean the car", DateOnly.FromDateTime(DateTime.Now.AddDays(2)))
-        };
         app.MapGet("/", () => Results.BadRequest("No value provided. Please provide a value in the format 'x_y'"));
         app.MapGet("/getValue/{values}", (string values) =>
         {   
@@ -51,13 +46,13 @@ public class Program{
     var inputs = input.Split('_');
     if (inputs.Length != 2)
         throw new ArgumentException("Input must be in the format 'x_y'");
-   
-    double x = double.Parse(inputs[0]);
-    double y = double.Parse(inputs[1]);
+    
+        double x = double.Parse(inputs[0].Replace(',', '.'), CultureInfo.InvariantCulture);
+        double y = double.Parse(inputs[1].Replace(',', '.'), CultureInfo.InvariantCulture);
         return new XYValues
         {
-            X = double.Parse(inputs[0]),
-            Y = double.Parse(inputs[1]),
+            X = x,
+            Y = y,
             Value = Math.Sqrt(x * x + y * y)
         };
 
@@ -78,11 +73,10 @@ class XYValues
 }
 
 
-public record Todo(int Id, string? Title, DateOnly? DueBy = null, bool IsComplete = false);
 
 
 
-[JsonSerializable(typeof(Todo[]))]
+[JsonSerializable(typeof(XYValues[]))]
 internal partial class AppJsonSerializerContext : JsonSerializerContext
 {
 
