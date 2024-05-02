@@ -109,7 +109,7 @@ public class Program{
     {
         // Construct the URL for the external API endpoint
         string apiUrl = $"http://node_x_{x}_y_{y}:5552/getValue/{input}";
-
+        Console.WriteLine(apiUrl);
         // Create an instance of HttpClient
         using (HttpClient httpClient = new HttpClient())
         {
