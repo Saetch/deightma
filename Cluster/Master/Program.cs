@@ -12,12 +12,12 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Authorization.Infrastructure;
 public class Program{
 
-        static int static_width_per_node = 2;
-        static int static_height_per_node = 2;
-        static bool use_dummy = true;
+    static int static_width_per_node = 2;
+    static int static_height_per_node = 2;
+    static bool use_dummy = true;
 
-        static int Main(String[] args){
-        
+    static int Main(String[] args){
+    
         if (Environment.GetEnvironmentVariable("USE_DUMMY") == "false") {
             use_dummy = false;
         }
@@ -55,7 +55,7 @@ public class Program{
         app.Run();
 
         return 0;
-        }
+    }
 
 
 
