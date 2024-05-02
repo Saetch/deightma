@@ -97,14 +97,18 @@ public class Program{
 
     static double calculateInterpolatedValue(double x, double y)
     {
+        Console.WriteLine("Received request for x: " + x + " y: " + y);
         double actual_x = x - offsetX;
         double actual_y = y - offsetY;
-
+        Console.WriteLine("Calculating value for inner x: " + actual_x + " y: " + actual_y);
         //dummy implementation to make sure the network works! TODO: implement actual interpolation
         actual_x = Math.Round(actual_x);
         actual_y = Math.Round(actual_y);
         actual_x = Math.Max(0, Math.Min(width - 1, actual_x));
         actual_y = Math.Max(0, Math.Min(height - 1, actual_y));
+        Console.WriteLine("Bounded indices are Actual x: " + actual_x + " y: " + actual_y);
+        Console.WriteLine("Casted to int these are : " + (int)actual_x + " y: " + (int)actual_y);
+        Console.WriteLine("Returning value: " + values[(int)actual_x][(int)actual_y]);
         return values[(int)actual_x][(int)actual_y];
     }
 
@@ -118,7 +122,7 @@ public class Program{
             throw new Exception("Too many values");
         }        
         double ret_value = calculateInterpolatedValue(x, y);
-        return new XYValues { X = x, Y = y, Value = ret_value };
+        return new XYValues { x = x, y = y, value = ret_value };
     }
 
 
@@ -132,10 +136,10 @@ public class Program{
 
 class XYValues
 {
-    public double X { get; set; }
-    public double Y { get; set; }
+    public double x { get; set; }
+    public double y { get; set; }
 
-    public double Value { get; set; }
+    public double value { get; set; }
 }
 
 

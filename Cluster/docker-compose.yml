@@ -15,7 +15,7 @@ services:
       networks:
         - distr-network
       environment:
-        - "USE_DUMMY=true"
+        - "USE_DUMMY=false"
 networks:
   distr-network:
     driver: bridge
