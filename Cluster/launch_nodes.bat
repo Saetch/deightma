@@ -21,9 +21,10 @@ set /a height_max_index=%2-1
 
 docker network create cluster_distr-network
 
+REM width and height are hardcoded for now
 for /l %%x in (0,1,%width_max_index%) do (
     for /l %%y in (0,1,%height_max_index%) do (
-        docker run --name node_x_%%x_y_%%y --network cluster_distr-network -d -e WIDTH=%1 -e HEIGHT=%2 -e OFFSET_X=%%x -e OFFSET_Y=%%y node_cs_aot
+        docker run --name node_x_%%x_y_%%y --network cluster_distr-network -d -e WIDTH=2 -e HEIGHT=2 -e OFFSET_X=%%x -e OFFSET_Y=%%y node_cs_aot
     )
 )
 

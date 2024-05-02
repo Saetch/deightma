@@ -51,7 +51,7 @@ public class Program{
             }
             Console.WriteLine();
         }
-
+        Console.WriteLine();
 
         var builder = WebApplication.CreateSlimBuilder(args);
 
@@ -110,7 +110,7 @@ public class Program{
 
     static XYValues getValue(string values)
     {
-        Console.WriteLine("Received GetValie-call with params: " + values);
+        Console.WriteLine("Received GetValue-call with params: " + values);
         string[] splitValues = values.Split("_");
         double x = Double.Parse(splitValues[0].Replace(',', '.'), CultureInfo.InvariantCulture);
         double y = Double.Parse(splitValues[1].Replace(',', '.'), CultureInfo.InvariantCulture);
