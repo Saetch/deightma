@@ -8,122 +8,42 @@ using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.ObjectPool;
 using Microsoft.Extensions.Options;
+using Node_cs;
 public class Program{
 
-    //values relevant for operating
-    public static double[][] values;
-    public static int offsetX = 0;
-    public static int offsetY = 0;
-    public static int width = 2;
-    public static int height = 2;
+
 
     public static int Main(String[] args){
 
+        ApiConfig config = new ApiConfig();
         //get environment variables to determine the data fields
-        try{
-            #pragma warning disable CS8604 // Possible null reference argument.
-            width = int.Parse(Environment.GetEnvironmentVariable("WIDTH"));
-            height = int.Parse(Environment.GetEnvironmentVariable("HEIGHT"));
-            offsetX = int.Parse(Environment.GetEnvironmentVariable("OFFSET_X"));
-            offsetY = int.Parse(Environment.GetEnvironmentVariable("OFFSET_Y"));   
-            #pragma warning restore CS8604 // Possible null reference argument.
- 
-        } catch (Exception e){
-            Console.WriteLine("Error while parsing environment variables: " + e.Message);
-        }
 
-        values = new double[width][];
-        for (int i = 0; i < width; i++)
+
+        config.initializeConfigValues();
         {
-            values[i] = new double[height];
-        }
-
-        initializeValues();
-
-        //just information on launch
-        Console.WriteLine("Starting server on port 5552 with width: " + width + " height: " + height + " offsetX: " + offsetX + " offsetY: " + offsetY);
-        Console.WriteLine("Values: ");	
-        for (int i = 0; i < width; i++)
-        {
-            for (int j = 0; j < height; j++)
+            //just information on launch
+            Console.WriteLine("Starting server on port 5552 with width: " + config.width + " height: " + config.height + " offsetX: " + config.offsetX + " offsetY: " + config.offsetY);
+            Console.WriteLine("Values: ");	
+            for (int i = 0; i < config.width; i++)
             {
-                Console.Write(values[i][j] + " ");
+                for (int j = 0; j < config.height; j++)
+                {
+                    Console.Write(config.values[i][j] + " ");
+                }
+                Console.WriteLine();
             }
             Console.WriteLine();
         }
-        Console.WriteLine();
-
-        var builder = WebApplication.CreateSlimBuilder(args);
-
-        builder.Services.ConfigureHttpJsonOptions(options =>
-        {
-            options.SerializerOptions.TypeInfoResolverChain.Insert(0, AppJsonSerializerContext.Default);
-        });
-
-        //configure the builder to accept external connections to the server ("0.0.0.0")
-        builder.WebHost.ConfigureKestrel(options => options.Listen(IPAddress.Any, 5552));
 
 
-        var app = builder.Build();
-
-
-        app.MapGet("/getValue/{values}", (string values) =>
-        {   
-            try {
-                var result = getValue(values);
-                return Results.Ok(result);
-            } catch (Exception e) {
-                return Results.BadRequest(e.Message);
-            }
-            
-        });
+        var app = config.setupServer();
         app.Run();
 
         return 0;
     }
 
-    //dummy implementation to make sure the network works! TODO: implement actual initialization!
-    static void initializeValues()
-    {
-        Random random = new Random();
-        for (int i = 0; i < width; i++)
-        {
-            for (int j = 0; j < height; j++)
-            {
-                values[i][j] = i + offsetX + j + offsetY;
-            }
-        }
-    }
 
-    static double calculateInterpolatedValue(double x, double y)
-    {
-        Console.WriteLine("Received request for x: " + x + " y: " + y);
-        double actual_x = x - offsetX;
-        double actual_y = y - offsetY;
-        Console.WriteLine("Calculating value for inner x: " + actual_x + " y: " + actual_y);
-        //dummy implementation to make sure the network works! TODO: implement actual interpolation
-        actual_x = Math.Round(actual_x);
-        actual_y = Math.Round(actual_y);
-        actual_x = Math.Max(0, Math.Min(width - 1, actual_x));
-        actual_y = Math.Max(0, Math.Min(height - 1, actual_y));
-        Console.WriteLine("Bounded indices are Actual x: " + actual_x + " y: " + actual_y);
-        Console.WriteLine("Casted to int these are : " + (int)actual_x + " y: " + (int)actual_y);
-        Console.WriteLine("Returning value: " + values[(int)actual_x][(int)actual_y]);
-        return values[(int)actual_x][(int)actual_y];
-    }
 
-    static XYValues getValue(string values)
-    {
-        Console.WriteLine("Received GetValue-call with params: " + values);
-        string[] splitValues = values.Split("_");
-        double x = Double.Parse(splitValues[0].Replace(',', '.'), CultureInfo.InvariantCulture);
-        double y = Double.Parse(splitValues[1].Replace(',', '.'), CultureInfo.InvariantCulture);
-        if(splitValues.Length > 2){
-            throw new Exception("Too many values");
-        }        
-        double ret_value = calculateInterpolatedValue(x, y);
-        return new XYValues { x = x, y = y, value = ret_value };
-    }
 
 
 
@@ -134,13 +54,7 @@ public class Program{
 
 
 
-class XYValues
-{
-    public double x { get; set; }
-    public double y { get; set; }
 
-    public double value { get; set; }
-}
 
 
 
