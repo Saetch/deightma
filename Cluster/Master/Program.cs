@@ -14,8 +14,14 @@ public class Program{
 
         static int static_width_per_node = 2;
         static int static_height_per_node = 2;
+        static bool use_dummy = true;
 
         static int Main(String[] args){
+        
+        if (Environment.GetEnvironmentVariable("USE_DUMMY") == "false") {
+            use_dummy = false;
+        }
+        
         var builder = WebApplication.CreateSlimBuilder(args);
 
         builder.Services.ConfigureHttpJsonOptions(options =>
@@ -33,8 +39,14 @@ public class Program{
         app.MapGet("/getValue/{values}",  async (string values) =>
         {   
             try {
-                var result = await getValue(values);
-                return Results.Ok(result);
+                if (use_dummy)
+                {
+                    var result = getDummyValue(values);
+                    return Results.Ok(result);
+                }else{
+                    var result = await getValue(values);
+                    return Results.Ok(result);
+                }
             } catch (Exception e) {
                 return Results.BadRequest(e.Message);
             }
@@ -71,6 +83,25 @@ public class Program{
         node_coordinates[1] = y / static_height_per_node;
         return node_coordinates;
     }
+
+    //dummy implementation of the getValue function. This function is to be replaced by the actual logic, calling the nodes in the network
+    static XYValues getDummyValue(String input){
+    var inputs = input.Split('_');
+    if (inputs.Length != 2)
+        throw new ArgumentException("Input must be in the format 'x_y'");
+
+    double x = double.Parse(inputs[0]);
+    double y = double.Parse(inputs[1]);
+        return new XYValues
+        {
+            X = double.Parse(inputs[0]),
+            Y = double.Parse(inputs[1]),
+            Value = Math.Sqrt(x * x + y * y)
+        };
+
+
+    }
+
 
 
 

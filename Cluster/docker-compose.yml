@@ -14,6 +14,8 @@ services:
         - "5000:5552"
       networks:
         - distr-network
+      environment:
+        - "USE_DUMMY=true"
 networks:
   distr-network:
     driver: bridge
