@@ -1,10 +1,9 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
-BASE_URL = localhost:5000;
-
 class Client{
+    static string BASE_URL = "http://127.0.0.1:5000";
 
-    public static async void Main(){
+    public static void Main(){
         Console.WriteLine("Please Enter your x-value");
         string x = Console.ReadLine();
         Console.WriteLine("Your x-value is: " + x + ". Please enter your y-value");
@@ -15,8 +14,9 @@ class Client{
 
         try
         {
-            string value = await webClient.GetValue(x, y);
-            Console.WriteLine($"Value received: {value}");
+            var value = webClient.GetValue(x, y);
+            string returnValue=value.Result;
+            Console.WriteLine($"Value received: {returnValue}");
 
         }
         catch (Exception ex)
