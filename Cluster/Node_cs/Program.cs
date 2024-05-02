@@ -40,6 +40,18 @@ public class Program{
 
         initializeValues();
 
+        //just information on launch
+        Console.WriteLine("Starting server on port 5552 with width: " + width + " height: " + height + " offsetX: " + offsetX + " offsetY: " + offsetY);
+        Console.WriteLine("Values: ");	
+        for (int i = 0; i < width; i++)
+        {
+            for (int j = 0; j < height; j++)
+            {
+                Console.Write(values[i][j] + " ");
+            }
+            Console.WriteLine();
+        }
+
 
         var builder = WebApplication.CreateSlimBuilder(args);
 
@@ -98,6 +110,7 @@ public class Program{
 
     static XYValues getValue(string values)
     {
+        Console.WriteLine("Received GetValie-call with params: " + values);
         string[] splitValues = values.Split("_");
         double x = Double.Parse(splitValues[0].Replace(',', '.'), CultureInfo.InvariantCulture);
         double y = Double.Parse(splitValues[1].Replace(',', '.'), CultureInfo.InvariantCulture);
