@@ -1,0 +1,13 @@
+[package]
+name = "bicubic_interpolation_service"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+actix-web = "4.5.1"
+ndarray = { version = "0.15.6", features = ["serde", "serde-1"] }
+rand = "0.8.5"
+serde = "1.0.200"
+serde_derive = "1.0.200"

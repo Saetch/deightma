@@ -16,6 +16,16 @@ services:
         - distr-network
       environment:
         - "USE_DUMMY=false"
+    bicubic_interpolation_service: 
+      container_name: bicubic_interpolation_service
+      image: deightma_bicubic_interpolation_service
+      build:
+        context: ./bicubic_interpolation_service
+        dockerfile: Dockerfile
+      ports:
+        - "5555:8080"   ## this is for debug purposes, the service does not need to be exposed to the host at all!
+      networks:
+        - distr-network
 networks:
   distr-network:
     driver: bridge
