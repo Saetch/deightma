@@ -15,7 +15,7 @@ namespace Node_cs
         public int width = 2;
         public int height = 2;
 
-
+        public static String bicubic_interpolation_service_url = "http://bicubic_interpolation_service:8080/calculate";
 
         public void initializeConfigValues()
         {
@@ -29,6 +29,9 @@ namespace Node_cs
             } catch (Exception e){
                 Console.WriteLine("Error while parsing environment variables: " + e.Message);
             }
+            //TODO! remove this, this is just for static implementation, e.g. every node knows the width and height of all nodes. How the offsets are prepared will need to be updated
+            offsetX = offsetX * width;
+            offsetY = offsetY * height;
 
             values = new double[width][];
             for (int i = 0; i < width; i++)
@@ -72,6 +75,22 @@ namespace Node_cs
                     return Results.BadRequest(e.Message);
                 }
             });
+            app.MapGet("/getSavedValue/{x}/{y}", (int x, int y) =>
+            {
+                double? result = GetRequests.GetSavedNodeValue(x, y, this);
+                return Results.Ok(result);
+            });
+            app.MapPost("/setSavedValue/{x}/{y}/{value}", (int x, int y, double value) =>
+            {
+                try {
+                    x = x - this.offsetX;
+                    y = y - this.offsetY;
+                    values[x][y] = value;
+                    return Results.Ok();
+                } catch (Exception e) {
+                    return Results.BadRequest(e.Message);
+                }
+            });
         }
         
     }
@@ -83,4 +102,5 @@ namespace Node_cs
 
     public double value { get; set; }
 }
+
 }
