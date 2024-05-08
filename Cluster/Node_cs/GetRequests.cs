@@ -39,6 +39,8 @@ namespace Node_cs
             var current_y = zeroed_actual_y;
             bool found = false;
             TcpClient tcpClient = new TcpClient();
+            tcpClient.ReceiveTimeout = 50;
+            tcpClient.SendTimeout = 50;
             for (int i = -1; i < 3; i++)
             {   
                 Console.WriteLine("Filling in row " + i);
