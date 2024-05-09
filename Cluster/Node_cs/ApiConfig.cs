@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Node_cs
 {
@@ -78,7 +79,11 @@ namespace Node_cs
             app.MapGet("/getSavedValue/{x}/{y}", (int x, int y) =>
             {
                 double? result = GetRequests.GetSavedNodeValue(x, y, this);
-                return Results.Ok(result);
+                Console.WriteLine("Received getSavedValue-call with params: " + x + " " + y + " returning: " + result);
+                if (result == null){
+                    return Results.Ok("null");
+                }
+                return Results.Ok(result.Value);
             });
             app.MapPost("/setSavedValue/{x}/{y}/{value}", (int x, int y, double value) =>
             {
