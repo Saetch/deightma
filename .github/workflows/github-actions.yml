@@ -6,8 +6,6 @@ jobs:
     runs-on: Ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-      with: 
-        docker-version: '19.03.12'
     - run: ls ./Cluster
     - run: ls Cluster
     - run: docker-compose -f ./Cluster/docker-compose.yml build
@@ -18,6 +16,4 @@ jobs:
     runs-on: Ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-      with: 
-        dotnet-version: '3.1.301'
     - run: dotnet build ./Client/Client.csproj
