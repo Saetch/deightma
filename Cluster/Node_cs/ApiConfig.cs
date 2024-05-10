@@ -16,10 +16,11 @@ namespace Node_cs
         public int width = 2;
         public int height = 2;
 
-        public static String bicubic_interpolation_service_url = "http://bicubic_interpolation_service:8080/calculate";
+        public const String BICUBIC_INTERPOLATION_SERVICE_URL = "http://bicubic_interpolation_service:8080/calculate";
 
         public void initializeConfigValues()
         {
+            Console.WriteLine("hostname is: "+Environment.GetEnvironmentVariable("HOSTNAME"));
             try{
                 #pragma warning disable CS8604 // Possible null reference argument.
                 width = int.Parse(Environment.GetEnvironmentVariable("WIDTH"));
