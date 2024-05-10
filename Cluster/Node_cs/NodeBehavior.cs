@@ -12,16 +12,6 @@ namespace Node_cs
     class NodeBehavior{
         
         public static async Task<double [][]> GetValuesForInterpolation(int zeroed_actual_x, int zeroed_actual_y, ApiConfig config){
-        Console.WriteLine("Trying out connection to bicubic service via httpclient to the actual docker id!");
-        TcpClient tcpClient = new TcpClient();
-        var result = tcpClient.BeginConnect("64e9215c9185", 8080, null, null);
-        var success = result.AsyncWaitHandle.WaitOne(TimeSpan.FromMilliseconds(22));
-        if (success)
-        {
-            tcpClient.EndConnect(result);
-        }
-        Console.WriteLine("Connected to bicubic service: " + success);
-        tcpClient.Close();
 
         Console.WriteLine("Filling in matrix values for "+zeroed_actual_x+"/"+ zeroed_actual_y+" ... ");
         double? [][] nullableMatrix = await GetActualValuesFromNodes(zeroed_actual_x, zeroed_actual_y, config);
