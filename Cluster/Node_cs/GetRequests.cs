@@ -26,8 +26,23 @@ namespace Node_cs
         //dummy implementation to make sure the network works! TODO: implement actual interpolation
         int zeroed_actual_x = (int)Math.Floor(x);
         int zeroed_actual_y = (int)Math.Floor(y);
-        double? [][] valueArray = await NodeBehavior.GetValuesForInterpolation(zeroed_actual_x, zeroed_actual_y, config);
-        return config.values[(int)relative_x][(int)relative_y];
+        double [][] valueArray = await NodeBehavior.GetValuesForInterpolation(zeroed_actual_x, zeroed_actual_y, config);
+        //request solving the interpolation from the bicubic interpolation service
+        var client = new HttpClient();
+        String arr = "";
+        for (int i = 0; i < valueArray.Length; i++)
+        {
+            for (int j = 0; j < valueArray[i].Length; j++)
+            {
+                arr += valueArray[i][j] + (j == valueArray[i].Length -1 ? ";" : ",");
+            }
+        }
+        arr = arr.TrimEnd(';');
+        Console.WriteLine("Sending request to bicubic interpolation service with values: " + arr);
+        var response = await client.GetAsync(ApiConfig.BICUBIC_INTERPOLATION_SERVICE_URL + "?x="+(x -zeroed_actual_x)+"&y="+(y -zeroed_actual_y)+"&arr=" + arr);
+        Console.WriteLine("Received response from bicubic interpolation service: " + response.Content.ReadAsStringAsync().Result);
+        double actual_value = Double.Parse(response.Content.ReadAsStringAsync().Result, CultureInfo.InvariantCulture);
+        return actual_value;
     }
 
 
@@ -55,10 +70,9 @@ namespace Node_cs
         if(splitValues.Length > 2){
             throw new Exception("Too many values");
         }    
-        var ret_value = CalculateInterpolatedValue(x, y,config);    
-        ret_value.Wait();
-        double ret_val = ret_value.Result;
-        return new XYValues { x = x, y = y, value = ret_val };
+        var ret_value = CalculateInterpolatedValue(x, y,config).Result;    
+        Console.WriteLine("Returning value: " + ret_value);
+        return new XYValues { x = x, y = y, value = ret_value };
     }
     }
 }

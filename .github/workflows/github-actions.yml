@@ -1,0 +1,15 @@
+name: Build Test
+run-name: ${{ github.actor }} 
+on: [push]
+jobs:
+  build-dockerfiles:
+    runs-on: docker:dind
+    steps:
+    - run: docker-compose -f .\Cluster\docker-compose.yml build
+    - run: docker build -f .\Cluster\Node_cs\Dockerfiles\aot\Dockerfile --tag node_cs_aot .\Cluster\Node_cs\
+    - run: docker-compose -f .\Cluster\docker-compose.yml up -d
+    - run: docker-compose -f .\Cluster\docker-compose.yml down
+  build-client:
+    runs-on: dotnet:8
+    steps:
+    - run: dotnet build .\Client\Client.csproj
