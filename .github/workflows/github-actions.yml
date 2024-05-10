@@ -9,14 +9,15 @@ jobs:
       with: 
         docker-version: '19.03.12'
     - run: ls ./Cluster
-    - run: docker-compose -f .\Cluster\docker-compose.yml build
-    - run: docker build -f .\Cluster\Node_cs\Dockerfiles\aot\Dockerfile --tag node_cs_aot .\Cluster\Node_cs\
-    - run: docker-compose -f .\Cluster\docker-compose.yml up -d
-    - run: docker-compose -f .\Cluster\docker-compose.yml down
+    - run: ls Cluster
+    - run: docker-compose -f ./Cluster/docker-compose.yml build
+    - run: docker build -f ./Cluster/Node_cs/Dockerfiles/aot/Dockerfile --tag node_cs_aot ./Cluster/Node_cs/
+    - run: docker-compose -f ./Cluster/docker-compose.yml up -d
+    - run: docker-compose -f ./Cluster/docker-compose.yml down
   build-client:
     runs-on: Ubuntu-latest
     steps:
     - uses: actions/checkout@v3
       with: 
         dotnet-version: '3.1.301'
-    - run: dotnet build .\Client\Client.csproj
+    - run: dotnet build ./Client/Client.csproj
