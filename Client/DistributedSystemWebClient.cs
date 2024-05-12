@@ -35,4 +35,25 @@ public class DistributedSystemWebClient
             throw new Exception($"Error receiving the value: {ex.Message}");
         }
     }
+
+    public async Task<string> SetValue(string x, string y, string z){
+        try
+        {
+            string url=$"{_baseUrl}/setValue/{x}_{y}_{z}";
+
+         if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadAsStringAsync();
+            }
+            else
+            {
+                throw new Exception($"Error: {response.StatusCode}");
+            }
+        }
+        catch (Exception ex)
+        {
+            throw new Exception($"Error receiving the value: {ex.Message}");
+        }   
+        }
+    }
 }

@@ -36,6 +36,7 @@ public class Program{
         var app = builder.Build();
 
         app.MapGet("/", () => Results.BadRequest("No value provided. Please provide a value in the format 'x_y'"));
+
         app.MapGet("/getValue/{values}",  async (string values) =>
         {   
             try {
@@ -52,6 +53,29 @@ public class Program{
             }
             
         });
+        app.MapPut("/setValues/{x}_{y}_{z}", async (string x, string y, string z) =>
+        {
+            try
+            {
+                // Parse the values for x, y, and z
+                // (Assuming they are integers, you may need to adjust the parsing logic accordingly)
+                float xValue = float.Parse(x);
+                float yValue = float.Parse(y);
+                float zValue = float.Parse(z);
+                
+                // Call your setValues method passing x, y, and z
+                // Replace this with your actual method call
+                await setValues(xValue, yValue, zValue);
+                
+                return Results.Ok();
+            }
+            catch (Exception e)
+            {
+                return Results.BadRequest(e.Message);
+            }
+        });
+
+
         app.Run();
 
         return 0;
@@ -74,6 +98,25 @@ public class Program{
         double result_value = await get_value_from_node(node_coordinates[0], node_coordinates[1], input);
         return new XYValues {X = x_double, Y = y_double, Value = result_value};
     }
+
+
+    static async Task SetValue(string input, double z)
+{
+    var inputs = input.Split('_');
+    if (inputs.Length != 2)
+        throw new ArgumentException("Input must be in the format 'x_y'");
+
+    double x_double = double.Parse(inputs[0].Replace(',', '.'), CultureInfo.InvariantCulture);
+    double y_double = double.Parse(inputs[1].Replace(',', '.'), CultureInfo.InvariantCulture);
+    int x_int = (int)Math.Round(x_double);
+    int y_int = (int)Math.Round(y_double);
+
+    int[] node_coordinates = find_correct_node(x_int, y_int);
+
+    
+    await set_value_to_node(node_coordinates[0], node_coordinates[1], input, z);
+}
+
 
 
 //TODO: Implement the function that finds the correct node in the network for dynamic node distribution. This is just for a completely static cluster
@@ -105,7 +148,7 @@ public class Program{
 
 
 
-        static async Task<double> get_value_from_node(int x, int y, string input)
+    static async Task<double> get_value_from_node(int x, int y, string input)
     {
         // Construct the URL for the external API endpoint
         string apiUrl = $"http://node_x_{x}_y_{y}:5552/getValue/{input}";
@@ -126,6 +169,11 @@ public class Program{
                 throw new Exception("Error parsing response from node");
             return result.Value;
         }
+    }
+
+    //ToDo
+    static async Task<double> set_value_to_node(int x, int y, string input, string value){
+
     }
 }
 
