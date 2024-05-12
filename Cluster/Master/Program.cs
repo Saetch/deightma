@@ -72,7 +72,7 @@ public class Program{
 
         int[] node_coordinates = find_correct_node(x_int, y_int);
         double result_value = await get_value_from_node(node_coordinates[0], node_coordinates[1], input);
-        return new XYValues {X = x_double, Y = y_double, Value = result_value};
+        return new XYValues {x = x_double, y = y_double, value = result_value};
     }
 
 
@@ -94,9 +94,9 @@ public class Program{
     double y = double.Parse(inputs[1]);
         return new XYValues
         {
-            X = double.Parse(inputs[0]),
-            Y = double.Parse(inputs[1]),
-            Value = Math.Sqrt(x * x + y * y)
+            x = double.Parse(inputs[0]),
+            y = double.Parse(inputs[1]),
+            value = Math.Sqrt(x * x + y * y)
         };
 
 
@@ -121,10 +121,13 @@ public class Program{
 
             // Read the response content as a string
             string responseBody = await response.Content.ReadAsStringAsync();
+            Console.WriteLine("Received response: " + responseBody);
             XYValues? result = JsonSerializer.Deserialize<XYValues>(responseBody);
             if (result == null)
                 throw new Exception("Error parsing response from node");
-            return result.Value;
+
+            Console.WriteLine("Received value: " + result.value);
+            return result.value;
         }
     }
 }
@@ -135,10 +138,10 @@ public class Program{
 
 class XYValues
 {
-    public double X { get; set; }
-    public double Y { get; set; }
+    public double x { get; set; }
+    public double y { get; set; }
 
-    public double Value { get; set; }
+    public double value { get; set; }
 }
 
 
