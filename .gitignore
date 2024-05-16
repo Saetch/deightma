@@ -15,9 +15,6 @@ Cluster/Master/.vs
 Cluster/node_rs/.vscode
 Cluster/node_rs/target
 Cluster/bicubic_interpolation_service/target
-Cluster/Coordinator/target
-Cluster/Coordinator/.vs
-Cluster/Coordinator/.vscode
-Cluster/Coordinator/obj
-Cluster/Coordinator/bin
-Cluster/Coordinator/Properties
+Cluster/coordinator/target
+Cluster/coordinator/.vs
+Cluster/coordinator/.vscode

@@ -1,6 +1,0 @@
-@Coordinator_HostAddress = http://localhost:5204
-
-GET {{Coordinator_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###
