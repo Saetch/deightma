@@ -1,10 +1,10 @@
 use actix_web::{web, App, HttpResponse, HttpServer, Responder, middleware::Logger};
 use env_logger::Env;
-use post_requests::register;
+use post_requests::{initialize, register, set_values_per_node};
 mod state;
 mod post_requests;
 mod get_requests;
-
+mod communication;
 async fn manual_hello() -> impl Responder {
     HttpResponse::Ok().body("Hey there!")
 }
@@ -29,6 +29,11 @@ async fn main() -> std::io::Result<()> {
             .service(web::scope("/organize")
                 .route("/register/{node_name}", web::post().to( register ))
                 .route("/register_debug/{node_name}", web::get().to(register))
+                .route("/set_expected_values_per_node/{values}", web::put().to(set_values_per_node))
+                .route("/set_expected_values_per_node/{values}", web::get().to(set_values_per_node))
+                .route("/initialize", web::post().to(initialize))
+                .route("/initialize", web::get().to(initialize))
+                .route("/get_complete_state", web::get().to(get_requests::get_complete_state))
                 .route("/delete", web::delete().to(|| HttpResponse::Ok()))
                 .route("/update", web::put().to(|| HttpResponse::Ok()))
                 .route("/read", web::get().to(|| HttpResponse::Ok()))
