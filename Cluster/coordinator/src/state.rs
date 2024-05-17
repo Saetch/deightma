@@ -1,4 +1,4 @@
-use std::{collections::HashMap};
+use std::{ collections::HashMap, sync::{Arc, Weak}};
 
 use rand::Rng;
 use serde::Serialize;
@@ -13,9 +13,9 @@ pub type DistributeableValue = Position;
 pub struct InteriorMutableState {
     init: RwLock<bool>,
     pub counter: RwLock<u32>,
-    pub known_nodes: RwLock<HashMap<NodeName, NodeState>>,
-    pub waiting_nodes: RwLock<Vec<NodeName>>,
-    pub map_data: RwLock<HashMap<(i32, i32), String>>,
+    pub known_nodes: RwLock<HashMap<Arc<NodeName>, NodeState>>,
+    pub waiting_nodes: RwLock<Vec<Weak<NodeName>>>,  // ->
+    pub map_data: RwLock<HashMap<(i32, i32), Weak<NodeName>>>,  //originally, these were NodeName copies, but I changed them to Weak references to decrease memory usage
     pub perlin_noise_seed: RwLock<Option<u32>>,
     pub to_distribute: RwLock<Vec<DistributeableValue>>,
     pub to_replicate: RwLock<Vec<NodeName>>,
@@ -116,24 +116,25 @@ impl InteriorMutableState{
 
 
 impl ImmutableState{
-    pub async fn from_interior(state: &InteriorMutableState) -> Self {
+    pub async fn from_interior(state: & InteriorMutableState) -> Self {
         let mut map_data = HashMap::new();
         let orig_map_date = state.map_data.read().await;
         for (key, value) in orig_map_date.iter(){
             let mut key_string = "".to_owned();
             key_string = key_string + &key.0.to_string() +"/"+ &key.1.to_string();
-            map_data.insert( key_string, value.to_string());
+            let val = value.upgrade().unwrap().to_string();
+            map_data.insert( key_string, val);
         }
         Self {
             init: *state.init.read().await,
             counter: *state.counter.read().await,
-            known_nodes: state.known_nodes.read().await.clone(),
+            known_nodes: state.known_nodes.read().await.clone().into_iter().map(|(key, value)| (key.to_string(), value)).collect(),
             map_data: map_data,
             perlin_noise_seed: *state.perlin_noise_seed.read().await,
             to_distribute: state.to_distribute.read().await.clone(),
             expected_values_per_node: *state.expected_values_per_node.read().await,
             to_replicate: state.to_replicate.read().await.clone(),
-            waiting_nodes: state.waiting_nodes.read().await.clone(),
+            waiting_nodes: state.waiting_nodes.read().await.clone().into_iter().map(|weak| weak.upgrade().unwrap().to_string()).collect(),
         }
     }
 }

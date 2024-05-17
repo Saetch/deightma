@@ -1,5 +1,4 @@
-use actix_web::{web::{self, Json}, HttpResponse, Responder};
-use serde::Serialize;
+use actix_web::{ web, HttpResponse, Responder};
 
 use crate::state::{ImmutableState, InteriorMutableState};
 

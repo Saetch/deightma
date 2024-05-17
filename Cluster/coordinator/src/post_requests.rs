@@ -1,4 +1,6 @@
 
+use std::sync::{Arc, Weak};
+
 use actix_web::{web, HttpResponse, Responder};
 
 use crate::{communication::NodeRegisterResponse, state::{InteriorMutableState, NodeOccupation, NodeState}};
@@ -17,7 +19,8 @@ pub async fn register(path: web::Path<String>, data: web::Data<InteriorMutableSt
     }
     //insert node into known_nodes
     let cloned = node_name.clone();
-    nodes_map.insert(node_name, NodeState {
+    let arc_node = Arc::new(node_name);
+    nodes_map.insert(arc_node.clone(), NodeState {
         name: cloned.clone(),
         state: NodeOccupation::UNINITIALIZED,
     });
@@ -27,7 +30,7 @@ pub async fn register(path: web::Path<String>, data: web::Data<InteriorMutableSt
 
         //if no values to distribute, add node to waiting_nodes for later distribution or replication/backup
         let mut waiting_nodes = data.waiting_nodes.write().await;
-        waiting_nodes.push(cloned.clone());
+        waiting_nodes.push(Arc::downgrade(&arc_node));
         drop(waiting_nodes);
         let mut nodes_map = data.known_nodes.write().await;
         let node_state = nodes_map.get_mut(&cloned).unwrap();
@@ -35,6 +38,7 @@ pub async fn register(path: web::Path<String>, data: web::Data<InteriorMutableSt
             name: cloned.clone(),
             state: NodeOccupation::WAITING,
         };
+        drop(nodes_map);
         return HttpResponse::Ok().json(web::Json(NodeRegisterResponse::WAIT));
     }
 
@@ -58,10 +62,20 @@ pub async fn register(path: web::Path<String>, data: web::Data<InteriorMutableSt
         name: cloned.clone(),
         state: NodeOccupation::WORKING,
     };
+    let string_ref = nodes_map.keys().find(|key| key.as_ref().eq(&cloned));
+    let str_ref : Weak<String>;
+    if let Some(string_r) = string_ref {
+        println!("Node {} is working", &string_r);
+        str_ref = Arc::downgrade(string_r);
+    }else{
+        return HttpResponse::InternalServerError().body("Node not found in known_nodes!");
+    }
     drop(nodes_map);
     let mut map = data.map_data.write().await;
+    //find key and add reference to that key
+  
     for pos in vec_positions.iter(){
-        map.insert((pos.x, pos.y), cloned.clone());
+        map.insert((pos.x, pos.y), str_ref.clone());
     }
     drop(map);
     let response = NodeRegisterResponse::HANDLE{positions: vec_positions};
