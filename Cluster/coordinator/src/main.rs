@@ -26,7 +26,7 @@ async fn main() -> std::io::Result<()> {
             .wrap(Logger::default())
             .wrap(Logger::new("%a %{User-Agent}i"))
             .app_data(arc_share_state.clone())
-            .service(web::scope("/organize")
+            .service(web::scope("/organize")  //get requests are for debug purposes, since it is easier to use a browser to check the state without postman or similar
                 .route("/register/{node_name}", web::post().to( register ))
                 .route("/register_debug/{node_name}", web::get().to(register))
                 .route("/set_expected_values_per_node/{values}", web::put().to(set_values_per_node))
