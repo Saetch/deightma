@@ -18,21 +18,13 @@ public class Program{
         ApiConfig config = new ApiConfig();
         //get environment variables to determine the data fields
 
-
-        config.initializeConfigValues();
+        Console.WriteLine("Starting server on port 5552... ");
+        int returnCode = config.initializeConfigValues();
+        while (returnCode != 0)
         {
-            //just information on launch
-            Console.WriteLine("Starting server on port 5552 with width: " + config.width + " height: " + config.height + " offsetX: " + config.offsetX + " offsetY: " + config.offsetY);
-            Console.WriteLine("Values: ");	
-            for (int i = 0; i < config.width; i++)
-            {
-                for (int j = 0; j < config.height; j++)
-                {
-                    Console.Write(config.values[i][j] + " ");
-                }
-                Console.WriteLine();
-            }
-            Console.WriteLine();
+            Console.WriteLine("Failed to connect to coordinator service, retrying in 2 seconds ... ");
+            System.Threading.Thread.Sleep(2000);
+            returnCode = config.initializeConfigValues();
         }
 
 

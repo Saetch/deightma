@@ -32,7 +32,7 @@ services:
         context: ./coordinator
         dockerfile: Dockerfile
       ports:
-        - "5001:8080"       ## this is for debug purposes, the service does not need to be exposed to the host at all
+        - "8080"       ## this is for debug purposes, the service does not need to be exposed to the host at all
       networks:
         - distr-network
       environment:

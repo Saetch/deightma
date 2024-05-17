@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Net.Sockets;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 
@@ -10,44 +11,35 @@ namespace Node_cs
     public class ApiConfig
     {
 
-        public double[][] values;
-        public int offsetX = 0;
-        public int offsetY = 0;
-        public int width = 2;
-        public int height = 2;
+        public Dictionary<Tuple<int, int>, double> savedValues = new Dictionary<Tuple<int, int>, double>();
 
         public const String BICUBIC_INTERPOLATION_SERVICE_URL = "http://bicubic_interpolation_service:8080/calculate";
+        public String hostname = Environment.GetEnvironmentVariable("HOSTNAME");
+        public String COORDINATOR_SERVICE_URL = "coordinator-1";
 
-        public void initializeConfigValues()
+        public int initializeConfigValues()
         {
-            Console.WriteLine("hostname is: "+Environment.GetEnvironmentVariable("HOSTNAME"));
-            try{
-                #pragma warning disable CS8604 // Possible null reference argument.
-                width = int.Parse(Environment.GetEnvironmentVariable("WIDTH"));
-                height = int.Parse(Environment.GetEnvironmentVariable("HEIGHT"));
-                offsetX = int.Parse(Environment.GetEnvironmentVariable("OFFSET_X"));
-                offsetY = int.Parse(Environment.GetEnvironmentVariable("OFFSET_Y"));   
-                #pragma warning restore CS8604 // Possible null reference argument.
-            } catch (Exception e){
-                Console.WriteLine("Error while parsing environment variables: " + e.Message);
-            }
-            //TODO! remove this, this is just for static implementation, e.g. every node knows the width and height of all nodes. How the offsets are prepared will need to be updated
-            offsetX = offsetX * width;
-            offsetY = offsetY * height;
+            Console.WriteLine("hostname is: "+ this.hostname);
+            
+            TcpClient tcpClient = new TcpClient();
+            var result = tcpClient.BeginConnect(this.COORDINATOR_SERVICE_URL, 8080, null, null);
 
-            values = new double[width][];
-            for (int i = 0; i < width; i++)
+            var success = result.AsyncWaitHandle.WaitOne(TimeSpan.FromMilliseconds(15));
+            if (success)
             {
-                values[i] = new double[height];
+                tcpClient.EndConnect(result);
             }
-            Random random = new Random();
-            for (int i = 0; i < width; i++)
-            {
-                for (int j = 0; j < height; j++)
-                {
-                    values[i][j] = offsetX + i + offsetY + j + random.NextDouble();
-                }
+            else{
+                Console.WriteLine("Failed to connect to coordinator service ... ");
+                return 1;
             }
+            tcpClient.Close();
+
+
+            HttpClient client = new HttpClient();
+            var response = client.GetAsync("http://" + this.COORDINATOR_SERVICE_URL + ":8080/register/").Result;
+            Console.WriteLine("Received response from coordinator service: " + response.Content.ReadAsStringAsync().Result);
+            return 1;  //TODO! Update this if the Node is configured correctly according to the response from the coordinator service
         }
 
         public WebApplication setupServer(){
@@ -89,10 +81,28 @@ namespace Node_cs
             app.MapPost("/setSavedValue/{x}/{y}/{value}", (int x, int y, double value) =>
             {
                 try {
-                    x = x - this.offsetX;
-                    y = y - this.offsetY;
-                    values[x][y] = value;
-                    return Results.Ok();
+
+                    return Results.Ok("TODO! Implement this!");
+                } catch (Exception e) {
+                    return Results.BadRequest(e.Message);
+                }
+            });
+            app.MapPost("/setCoordinator/{ip}", (string ip) =>
+            {
+                try {
+                    Console.WriteLine("Received setCoordinator-call with params: " + ip );
+                    this.COORDINATOR_SERVICE_URL = ip;
+                    return Results.Ok("Coordinator set to: " + ip);
+                } catch (Exception e) {
+                    return Results.BadRequest(e.Message);
+                }
+            });
+            app.MapGet("/setCoordinator/{ip}", (string ip) => //TODO! Remove this after testing
+            {
+                try {
+                    Console.WriteLine("Received setCoordinator-call with params: " + ip );
+                    this.COORDINATOR_SERVICE_URL = ip;
+                    return Results.Ok("Coordinator set to: " + ip);
                 } catch (Exception e) {
                     return Results.BadRequest(e.Message);
                 }

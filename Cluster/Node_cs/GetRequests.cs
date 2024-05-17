@@ -16,13 +16,12 @@ namespace Node_cs
     static async Task<double> CalculateInterpolatedValue(double x, double y, ApiConfig config)
     {
         Console.WriteLine("Received request for x: " + x + " y: " + y);
-        double relative_x = Math.Round(x - config.offsetX);
-        double relative_y = Math.Round(y - config.offsetY);
-        Console.WriteLine("Calculating value for inner x: " + relative_x + " y: " + relative_y);
-        if(relative_x < 0 || relative_y < 0 || relative_x >= config.width || relative_y >= config.height ){
-            throw new Exception("Requested value is out of bounds");
+        Tuple<int, int> key = new Tuple<int, int>((int)Math.Round(x), (int)Math.Round(y));
+        if (!config.savedValues.ContainsKey(key))
+        {
+            Console.WriteLine("Closest value not found in saved values, aborting ...");
+            throw new Exception("Closest value not found in saved values, aborting ...");
         }
-        Console.WriteLine("Value is within bounds, calculating ... ");
         //dummy implementation to make sure the network works! TODO: implement actual interpolation
         int zeroed_actual_x = (int)Math.Floor(x);
         int zeroed_actual_y = (int)Math.Floor(y);
@@ -51,14 +50,11 @@ namespace Node_cs
 
 
     public static double? GetSavedNodeValue(int x, int y, ApiConfig config){
-        x = x - config.offsetX;
-        y = y - config.offsetY;
-        
-        if (x < 0 || y < 0 || x >= config.width || y >= config.height){
-            return null;
+        Tuple<int, int> key = new Tuple<int, int>(x, y);
+        if(config.savedValues.ContainsKey(key)){
+            return config.savedValues[key];
         }
-
-        return config.values[x][y];
+        return null;
     }
 
     public static XYValues GetValue(string values, ApiConfig config)

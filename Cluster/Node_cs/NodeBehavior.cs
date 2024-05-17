@@ -135,17 +135,20 @@ namespace Node_cs
         }
         return ret;
     }
+
+
+    //TODO! This is hardcoded and only works with the default configuration now. Update this to work with any configuration
     public static int[] GetNodePoints(int x, int y, ApiConfig config){
-        var ret = new int[2];
+        var ret = new int[2]; 
         if (x < 0) {
-            ret [0] = (x-1) / config.width;
+            ret [0] = (x-1) / 2;
         }else{
-            ret [0] = x / config.width;
+            ret [0] = x / 2;
         }
         if (y < 0) {
-            ret [1] = (y-1) / config.height;
+            ret [1] = (y-1) / 2;
         }else{
-            ret [1] = y / config.height;
+            ret [1] = y / 2;
         }
         return ret;
     }
@@ -161,6 +164,7 @@ namespace Node_cs
 
     static async Task<double? [][]> GetActualValuesFromNodes(int zeroed_actual_x, int zeroed_actual_y, ApiConfig config){
          using (HttpClient httpClient = new HttpClient()){
+            Tuple<int, int> key = new Tuple<int, int>(zeroed_actual_x, zeroed_actual_y);
             double? [][] values = new double?[4][];
             for (int i = 0; i < 4; i++)
             {
@@ -176,6 +180,11 @@ namespace Node_cs
             {   
                 Console.WriteLine("Filling in row " + i);
                 for (int j = -1; j < 3; j++){
+                    Tuple<int, int> current_key = new Tuple<int, int>(zeroed_actual_x + i, zeroed_actual_y + j);
+                    if (config.savedValues.ContainsKey(current_key)){
+                        values[i][j] = config.savedValues[current_key];
+                        continue;
+                    }
                     TcpClient tcpClient = new TcpClient();
                     found = false;
                     current_x = zeroed_actual_x + i;
@@ -197,12 +206,7 @@ namespace Node_cs
                         tcpClient.EndConnect(result);
                     }
                     tcpClient.Close();
-    
 
-                    if (current_x >= config.offsetX && current_x < config.offsetX + config.width && current_y >= config.offsetY && current_y < config.offsetY + config.height){
-                        values[i + 1][j + 1] = GetRequests.GetSavedNodeValue(current_x, current_y, config);
-                        continue;
-                    }
                     if (found){
                         apiUrl = GetNodeURL(zeroed_actual_x + i, zeroed_actual_y + j, config);
                         Console.WriteLine("Making request to: " + apiUrl+" while trying to catch HTTPRequestExceptions");
