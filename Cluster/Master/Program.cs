@@ -80,7 +80,7 @@ public class Program{
     static String find_correct_node(int x, int y){
         using (HttpClient httpClient = new HttpClient())
         {
-            var response = httpClient.GetAsync("http://coordinator:5552/getNode/"+x+"/"+y).Result;
+            var response = httpClient.GetAsync("http://coordinator:8080/organize/get_node/"+x+"/"+y).Result;
             response.EnsureSuccessStatusCode();
             var responseBody = response.Content.ReadAsStringAsync().Result;
             if (responseBody.Equals("Unknown")){
@@ -114,7 +114,7 @@ public class Program{
         static async Task<double> get_value_from_node(String name, string input)
     {
         // Construct the URL for the external API endpoint
-        string apiUrl = $"http://name:5552/getValue/{input}";
+        string apiUrl = $"http://"+name+":5552/getValue/"+input;
         Console.WriteLine(apiUrl);
         // Create an instance of HttpClient
         using (HttpClient httpClient = new HttpClient())

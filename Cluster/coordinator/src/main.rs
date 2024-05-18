@@ -39,6 +39,7 @@ async fn main() -> std::io::Result<()> {
                 .route("/initialize", web::get().to(initialize))
                 .route("/get_complete_state", web::get().to(get_requests::get_complete_state))
                 .route("/get_node/{x}/{y}", web::get().to(get_requests::get_node_for_point))
+                .route("/getNode/{x}/{y}", web::get().to(get_requests::get_node_for_point))
                 .route("/hey", web::get().to(manual_hello)),
     )
             .route("/ping", web::get().to(ping))

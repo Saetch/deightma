@@ -50,7 +50,9 @@ services:
         - distr-network
       deploy:
         mode: replicated
-        replicas: 4              
+        replicas: 4        
+      depends_on:
+        - coordinator
 networks:
   distr-network:
     driver: bridge
