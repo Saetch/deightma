@@ -70,18 +70,24 @@ public class Program{
         int x_int = (int)Math.Round(x_double);
         int y_int = (int)Math.Round(y_double);
 
-        int[] node_coordinates = find_correct_node(x_int, y_int);
-        double result_value = await get_value_from_node(node_coordinates[0], node_coordinates[1], input);
+        String node_name = find_correct_node(x_int, y_int);
+        double result_value = await get_value_from_node(node_name, input);
         return new XYValues {x = x_double, y = y_double, value = result_value};
     }
 
 
 //TODO: Implement the function that finds the correct node in the network for dynamic node distribution. This is just for a completely static cluster
-    static int[] find_correct_node(int x, int y){
-        int[] node_coordinates = new int[2];
-        node_coordinates[0] = x / static_width_per_node;
-        node_coordinates[1] = y / static_height_per_node;
-        return node_coordinates;
+    static String find_correct_node(int x, int y){
+        using (HttpClient httpClient = new HttpClient())
+        {
+            var response = httpClient.GetAsync("http://coordinator:5552/getNode/"+x+"/"+y).Result;
+            response.EnsureSuccessStatusCode();
+            var responseBody = response.Content.ReadAsStringAsync().Result;
+            if (responseBody.Equals("Unknown")){
+                throw new Exception("Node not found");
+            }
+            return responseBody;
+        }
     }
 
     //dummy implementation of the getValue function. This function is to be replaced by the actual logic, calling the nodes in the network
@@ -105,10 +111,10 @@ public class Program{
 
 
 
-        static async Task<double> get_value_from_node(int x, int y, string input)
+        static async Task<double> get_value_from_node(String name, string input)
     {
         // Construct the URL for the external API endpoint
-        string apiUrl = $"http://node_x_{x}_y_{y}:5552/getValue/{input}";
+        string apiUrl = $"http://name:5552/getValue/{input}";
         Console.WriteLine(apiUrl);
         // Create an instance of HttpClient
         using (HttpClient httpClient = new HttpClient())

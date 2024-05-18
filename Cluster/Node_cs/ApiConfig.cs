@@ -21,7 +21,7 @@ namespace Node_cs
         {
             Console.WriteLine("hostname is: "+ this.hostname);
             String env = Environment.GetEnvironmentVariable("CLUSTER_ENVIRONMENT");
-            if (env == null){
+            if (env == "local"){
                 Console.WriteLine("CLUSTER_ENVIRONMENT is: "+ env);
                     this.COORDINATOR_SERVICE_URL = "localhost";
                     this.PORT = 5003;

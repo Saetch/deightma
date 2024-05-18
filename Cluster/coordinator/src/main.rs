@@ -16,11 +16,15 @@ async fn ping() -> impl Responder {
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let share_state = state::InteriorMutableState::new();
-    let arc_share_state = web::Data::new(share_state);
 
     env_logger::init_from_env(Env::default().default_filter_or("info"));
-
+    let environment = std::env::var("LAUNCH_MODE").unwrap_or_else(|_| "initialized".to_string());
+    if environment == "initialized" {
+        share_state.dummy_initialize().await;   //TODO! This is just a default initialization, replace with sophisticated methods once required
+    }
     
+    let arc_share_state = web::Data::new(share_state);
+
     HttpServer::new(move || {
         App::new()
             .wrap(Logger::default())

@@ -192,7 +192,7 @@ namespace Node_cs
             Console.WriteLine("Node not found!");
             return null; 
         }
-        return nodePoints + "/getSavedValue/"+x+"/"+y;
+        return "http://"+nodePoints + ":5552" +"/getSavedValue/"+x+"/"+y;
     }
 
 

@@ -25,6 +25,7 @@ public class Program{
             Console.WriteLine("Failed to connect to coordinator service, retrying in 2 seconds ... ");
             System.Threading.Thread.Sleep(2000);
             returnCode = config.initializeConfigValues();
+            
         }
 
 

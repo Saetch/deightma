@@ -1,8 +1,6 @@
 
 
 ##use Master C# project
-
-version: '3.4'
 services:
     master:
       container_name: master
@@ -41,6 +39,18 @@ services:
         mode: replicated
         replicas: 1              ## this is needed as of now. Do not change this or the values will be distributed unevenly
       restart: always 
+    nodecs:
+      image: deightma_nodecs
+      build:
+        context: ./Node_cs
+        dockerfile: Dockerfiles/aot/Dockerfile
+      environment:
+        - CLUSTER_ENVIRONMENT=Network
+      networks:
+        - distr-network
+      deploy:
+        mode: replicated
+        replicas: 4              
 networks:
   distr-network:
     driver: bridge
