@@ -12,19 +12,26 @@ namespace Node_cs
     {
 
         public Dictionary<Tuple<int, int>, double> savedValues = new Dictionary<Tuple<int, int>, double>();
-
-        public const String BICUBIC_INTERPOLATION_SERVICE_URL = "http://bicubic_interpolation_service:8080/calculate";
+        public Dictionary<Tuple<int, int>, String> exteriorValuesInNodes = new Dictionary<Tuple<int, int>, String>();
+        public String BICUBIC_INTERPOLATION_SERVICE_URL = "http://bicubic_interpolation_service:8080/calculate";
         public String hostname = Environment.GetEnvironmentVariable("HOSTNAME");
-        public String COORDINATOR_SERVICE_URL = "coordinator-1";
-
+        public String COORDINATOR_SERVICE_URL = "coordinator";
+        public int PORT = 8080;
         public int initializeConfigValues()
         {
             Console.WriteLine("hostname is: "+ this.hostname);
-            
+            String env = Environment.GetEnvironmentVariable("CLUSTER_ENVIRONMENT");
+            if (env == null){
+                Console.WriteLine("CLUSTER_ENVIRONMENT is: "+ env);
+                    this.COORDINATOR_SERVICE_URL = "localhost";
+                    this.PORT = 5003;
+                    this.BICUBIC_INTERPOLATION_SERVICE_URL = "http://localhost:5555/calculate";
+                    this.hostname = "node1";
+            }
             TcpClient tcpClient = new TcpClient();
-            var result = tcpClient.BeginConnect(this.COORDINATOR_SERVICE_URL, 8080, null, null);
+            var result = tcpClient.BeginConnect(this.COORDINATOR_SERVICE_URL, this.PORT, null, null);
 
-            var success = result.AsyncWaitHandle.WaitOne(TimeSpan.FromMilliseconds(15));
+            var success = result.AsyncWaitHandle.WaitOne(TimeSpan.FromMilliseconds(150));
             if (success)
             {
                 tcpClient.EndConnect(result);
@@ -37,9 +44,9 @@ namespace Node_cs
 
 
             HttpClient client = new HttpClient();
-            var response = client.GetAsync("http://" + this.COORDINATOR_SERVICE_URL + ":8080/register/").Result;
-            Console.WriteLine("Received response from coordinator service: " + response.Content.ReadAsStringAsync().Result);
-            return 1;  //TODO! Update this if the Node is configured correctly according to the response from the coordinator service
+            var response = client.PostAsync("http://" + this.COORDINATOR_SERVICE_URL + ":"+ this.PORT+"/organize/register/"+this.hostname, null).Result;
+            DealWithResponse(response);
+            return 0;  //TODO! Update this if the Node is configured correctly according to the response from the coordinator service
         }
 
         public WebApplication setupServer(){
@@ -107,6 +114,34 @@ namespace Node_cs
                     return Results.BadRequest(e.Message);
                 }
             });
+        }
+
+        private void DealWithResponse(HttpResponseMessage response){
+            String responseString = response.Content.ReadAsStringAsync().Result;
+            Console.WriteLine("Received response from coordinator service: " + responseString);
+            if (responseString.Contains("WAIT")){
+                Console.WriteLine("Received WAIT command ... ");
+                return;
+            }
+            if (!responseString.Contains("HANDLE")){
+                Console.WriteLine("Received invalid response from coordinator service: " + responseString);
+                throw new Exception("Received invalid response from coordinator service: " + responseString);
+            }
+            //This is an example response: {"HANDLE":{"positions":[{"x":0,"y":0,"value":0.6816054984788531},{"x":1,"y":0,"value":0.6952797360508614},{"x":0,"y":1,"value":3.0950656335878035},{"x":1,"y":1,"value":2.0697533239357435}]}}
+            String valuesPart = responseString.Split("[{")[1];
+            String [] valuesStrings = valuesPart.Split("{");
+            foreach (String valueString in valuesStrings){
+                if (valueString.Length < 3){
+                    continue;
+                }
+                String [] valueParts = valueString.Split(",");
+                int x = Int32.Parse(valueParts[0].Split(":")[1]);
+                int y = Int32.Parse(valueParts[1].Split(":")[1]);
+                double value = Double.Parse(valueParts[2].Replace("}","").Replace("]","").Split(":")[1]);
+                savedValues.Add(new Tuple<int, int>(x,y), value);
+            }
+        
+
         }
         
     }

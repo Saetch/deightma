@@ -26,6 +26,8 @@ namespace Node_cs
         int zeroed_actual_x = (int)Math.Floor(x);
         int zeroed_actual_y = (int)Math.Floor(y);
         double [][] valueArray = await NodeBehavior.GetValuesForInterpolation(zeroed_actual_x, zeroed_actual_y, config);
+
+        Console.WriteLine("Successfully got values for interpolation");
         //request solving the interpolation from the bicubic interpolation service
         var client = new HttpClient();
         String arr = "";
@@ -38,7 +40,7 @@ namespace Node_cs
         }
         arr = arr.TrimEnd(';');
         Console.WriteLine("Sending request to bicubic interpolation service with values: " + arr);
-        var response = await client.GetAsync(ApiConfig.BICUBIC_INTERPOLATION_SERVICE_URL + "?x="+(x -zeroed_actual_x)+"&y="+(y -zeroed_actual_y)+"&arr=" + arr);
+        var response = await client.GetAsync(config.BICUBIC_INTERPOLATION_SERVICE_URL + "?x="+(x -zeroed_actual_x)+"&y="+(y -zeroed_actual_y)+"&arr=" + arr);
         Console.WriteLine("Received response from bicubic interpolation service: " + response.Content.ReadAsStringAsync().Result);
         double actual_value = Double.Parse(response.Content.ReadAsStringAsync().Result, CultureInfo.InvariantCulture);
         return actual_value;
@@ -49,17 +51,29 @@ namespace Node_cs
 
 
 
-    public static double? GetSavedNodeValue(int x, int y, ApiConfig config){
+    public static double? GetSavedNodeValue(int x, int y, ApiConfig config){        
+        Console.WriteLine("Received SavedValue-call with params: " + x + "/" + y);
         Tuple<int, int> key = new Tuple<int, int>(x, y);
+        DisplayState(config);
         if(config.savedValues.ContainsKey(key)){
             return config.savedValues[key];
         }
         return null;
     }
 
+    private static void DisplayState(ApiConfig config){
+        Console.WriteLine("State: " + config.savedValues);
+        Tuple<int, int>[] keys = config.savedValues.Keys.ToArray();
+        for (int i = 0; i < keys.Length; i++)
+        {
+            Console.WriteLine("Key: " + keys[i] + " Value: " + config.savedValues[keys[i]]);
+        }
+    }
+
     public static XYValues GetValue(string values, ApiConfig config)
     {
         Console.WriteLine("Received GetValue-call with params: " + values);
+        DisplayState(config);
         string[] splitValues = values.Split("_");
         double x = Double.Parse(splitValues[0].Replace(',', '.'), CultureInfo.InvariantCulture);
         double y = Double.Parse(splitValues[1].Replace(',', '.'), CultureInfo.InvariantCulture);

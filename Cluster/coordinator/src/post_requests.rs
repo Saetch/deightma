@@ -45,16 +45,14 @@ pub async fn register(path: web::Path<String>, data: web::Data<InteriorMutableSt
     //if there are values to distribute, distribute them
     let mut vec_positions = Vec::new();
     let number_to_distribute = *data.expected_values_per_node.read().await;
-    let to_distribute = data.to_distribute.read().await;
-    let mut iter = to_distribute.iter();
-    for _i in 0..number_to_distribute{
-        let node_val_to_distribute = iter.next();
-        if let Some(node_val_to_distribute) = node_val_to_distribute {
-            vec_positions.push(node_val_to_distribute.clone());
-        }else {
-            break;
-        }
+    let mut to_distribute = data.to_distribute.write().await;
+    let to_drain = u32::min(number_to_distribute,to_distribute.len() as u32);
+
+    let mut iter =  to_distribute.drain(0..to_drain as usize);
+    while let Some(node_val_to_distribute) = iter.next() {
+        vec_positions.push(node_val_to_distribute.clone());
     }
+    drop(iter);
     drop(to_distribute);
     let mut nodes_map = data.known_nodes.write().await;
     let node_state = nodes_map.get_mut(&cloned).unwrap();

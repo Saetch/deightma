@@ -32,15 +32,15 @@ services:
         context: ./coordinator
         dockerfile: Dockerfile
       ports:
-        - "8080"       ## this is for debug purposes, the service does not need to be exposed to the host at all
+        - "5003:8080"       ## this is for debug purposes, the service does not need to be exposed to the host at all
       networks:
         - distr-network
       environment:
         - "ENVIRONMENT=Development"
       deploy:
         mode: replicated
-        replicas: 1
-      restart: always
+        replicas: 1              ## this is needed as of now. Do not change this or the values will be distributed unevenly
+      restart: always 
 networks:
   distr-network:
     driver: bridge

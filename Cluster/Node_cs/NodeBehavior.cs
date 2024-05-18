@@ -82,9 +82,9 @@ namespace Node_cs
                 }
             }
         }
-        for(int j = 1; j <3; j++){
+        for(int j = 0; j < 4; j++){
             double? ToFillValue = null;
-            for(int i = 0; i < 4; i++){
+            for(int i = j == 0 ? 1 : j == 3 ? 1 : 0 ; i < (j==3 ? 3 : j == 0 ? 3 : 4); i++){
                 if (values[i][j] == null){
                     values[i][j] = ToFillValue;
                 }else{
@@ -137,28 +137,62 @@ namespace Node_cs
     }
 
 
-    //TODO! This is hardcoded and only works with the default configuration now. Update this to work with any configuration
-    public static int[] GetNodePoints(int x, int y, ApiConfig config){
-        var ret = new int[2]; 
-        if (x < 0) {
-            ret [0] = (x-1) / 2;
-        }else{
-            ret [0] = x / 2;
+    public static String GetHoldingNode(int x, int y, ApiConfig config){
+        Tuple<int, int> key = new Tuple<int, int>(x, y);
+        if (config.exteriorValuesInNodes.TryGetValue(key, out string? value)){
+            TcpClient tcpClient = new TcpClient();
+            var result = tcpClient.BeginConnect(value, 5552, null, null);
+            var success = result.AsyncWaitHandle.WaitOne(TimeSpan.FromMilliseconds(22));
+            if (success)
+            {
+                tcpClient.EndConnect(result);
+                tcpClient.Close();
+                return value;
+            }
+            else{
+                Console.WriteLine("Failed to connect to known node, requesting new information ... ");
+                tcpClient.Close();
+            }
+        }  else {
+            Console.WriteLine("No information about node found, requesting new information ... ");
         }
-        if (y < 0) {
-            ret [1] = (y-1) / 2;
-        }else{
-            ret [1] = y / 2;
+        
+        TcpClient tcpClient2 = new TcpClient();
+        var result2 = tcpClient2.BeginConnect(config.COORDINATOR_SERVICE_URL, config.PORT, null, null);
+        var success2 = result2.AsyncWaitHandle.WaitOne(TimeSpan.FromMilliseconds(150));
+        if (success2)
+        {
+            tcpClient2.EndConnect(result2);
         }
-        return ret;
+        else{
+            while (!success2){
+                Console.WriteLine("Failed to connect to coordinator service ... ");
+                //sleep for 1 second
+                System.Threading.Thread.Sleep(1000);
+                result2 = tcpClient2.BeginConnect(config.COORDINATOR_SERVICE_URL, config.PORT, null, null);
+                success2 = result2.AsyncWaitHandle.WaitOne(TimeSpan.FromMilliseconds(150));
+            }
+            tcpClient2.EndConnect(result2);
+        }
+        tcpClient2.Close();
+        HttpClient client = new HttpClient();
+        var response = client.GetAsync("http://" + config.COORDINATOR_SERVICE_URL + ":"+ config.PORT+"/organize/get_node/"+x+"/"+y).Result;
+        var node = response.Content.ReadAsStringAsync().Result;
+        config.exteriorValuesInNodes[key] = node;
+        return node;
+        
     }
 
     //as of yet it is hardcoded since the nodes are hardcoded, too. Assuming that all nodes have the same height and width
-    static String GetNodeURL(int x, int y, ApiConfig config){
+    static String? GetNodeURL(int x, int y, ApiConfig config){
 
-        var nodePoints = GetNodePoints(x, y, config);
+        var nodePoints = GetHoldingNode(x, y, config);
 
-        return "http://node_x_" + nodePoints[0] + "_y_" + nodePoints[1] +":5552/getSavedValue/" + x + "/" + y + "/";
+        if (nodePoints.Equals("Unknown")){
+            Console.WriteLine("Node not found!");
+            return null; 
+        }
+        return nodePoints + "/getSavedValue/"+x+"/"+y;
     }
 
 
@@ -171,53 +205,31 @@ namespace Node_cs
                 values[i] = new double?[4];
             }
             String apiUrl;
+            String? node;
             HttpResponseMessage response;
-            var current_x = zeroed_actual_x;
-            var current_y = zeroed_actual_y;
-            bool found = false;
-        
             for (int i = -1; i < 3; i++)
             {   
                 Console.WriteLine("Filling in row " + i);
                 for (int j = -1; j < 3; j++){
                     Tuple<int, int> current_key = new Tuple<int, int>(zeroed_actual_x + i, zeroed_actual_y + j);
                     if (config.savedValues.ContainsKey(current_key)){
-                        values[i][j] = config.savedValues[current_key];
+                        Console.WriteLine("Value found in saved values, using it ... ");
+                        Console.WriteLine("Key: "+current_key+"   ->   " + config.savedValues[current_key]);
+                        values[i+1][j+1] = config.savedValues.GetValueOrDefault(current_key);
                         continue;
                     }
-                    TcpClient tcpClient = new TcpClient();
-                    found = false;
-                    current_x = zeroed_actual_x + i;
-                    current_y = zeroed_actual_y + j;
-                    //in order to correctly identify negative values, it is needed to offset them by one, otherwise the division will not work correctly
-                    var nodePoints = GetNodePoints(current_x, current_y, config);
-                    int node_x = nodePoints[0];
-                    int node_y = nodePoints[1];
-                    Console.WriteLine("Filling in value for " + current_x + "/" + current_y);
-                    //check wether or not there is a connection
-
-                    Console.WriteLine("Trying to connect to node_x_" + node_x + "_y_" + node_y);
-                    var result = tcpClient.BeginConnect("node_x_" + node_x  + "_y_" + node_y, 5552, null, null);
-
-                    var success = result.AsyncWaitHandle.WaitOne(TimeSpan.FromMilliseconds(22));
-                    if (success)
-                    {
-                        found = true;
-                        tcpClient.EndConnect(result);
-                    }
-                    tcpClient.Close();
-
-                    if (found){
-                        apiUrl = GetNodeURL(zeroed_actual_x + i, zeroed_actual_y + j, config);
-                        Console.WriteLine("Making request to: " + apiUrl+" while trying to catch HTTPRequestExceptions");
-
-                        // Make a GET request to the external API
-                        response = httpClient.Send(new HttpRequestMessage(HttpMethod.Get, apiUrl));
-                    }else{
-                        Console.WriteLine("No server running, setting value to null!");
+                    node = GetNodeURL(zeroed_actual_x + i, zeroed_actual_y + j, config);
+                    if (node == null){
+                        Console.WriteLine("Node not found, setting value to null!");
                         values[i + 1][j + 1] = null;
                         continue;
                     }
+                    apiUrl = node;
+                    Console.WriteLine("Making request to: " + apiUrl+" while trying to catch HTTPRequestExceptions");
+
+                    // Make a GET request to the external API
+                    response = httpClient.Send(new HttpRequestMessage(HttpMethod.Get, apiUrl));
+
 
                     // Read the response content as a string
                     string responseBody = await response.Content.ReadAsStringAsync();
