@@ -19,21 +19,21 @@ jobs:
     - run: docker-compose -f ./Cluster/docker-compose.yml down
     - run: docker login ghcr.io -u ${{ github.repository_owner }} -p ${{ secrets.GITHUB_TOKEN }}
     - run: |
-        docker tag deightma_coordinator ghcr.io/${{ github.repository_owner,, }}/deightma_coordinator:latest
+        docker tag deightma_coordinator ghcr.io/saetch/deightma_coordinator:latest
     - run: |
-        docker push ghcr.io/${{ github.repository_owner,, }}/deightma_coordinator:latest
+        docker push ghcr.io/saetch/deightma_coordinator:latest
     - run: |
-        docker tag deightma_bicubic_interpolation_service ghcr.io/${{ github.repository_owner,, }}/bicubic_interpolation_service:latest
+        docker tag deightma_bicubic_interpolation_service ghcr.io/saetch/bicubic_interpolation_service:latest
     - run: |
-        docker push ghcr.io/${{ github.repository_owner,, }}/bicubic_interpolation_service:latest
+        docker push ghcr.io/saetch/bicubic_interpolation_service:latest
     - run: |
-        docker tag deightma_master ghcr.io/${{ github.repository_owner,, }}/deightma_master:latest
+        docker tag deightma_master ghcr.io/saetch/deightma_master:latest
     - run: |
-        docker push ghcr.io/${{ github.repository_owner,, }}/deightma_master:latest
+        docker push ghcr.io/saetch/deightma_master:latest
     - run: |
-        docker tag deightma_nodecs ghcr.io/${{ github.repository_owner,, }}/deightma_nodecs:latest
+        docker tag deightma_nodecs ghcr.io/saetch/deightma_nodecs:latest
     - run: |
-        docker push ghcr.io/${{ github.repository_owner,, }}/deightma_nodecs:latest
+        docker push ghcr.io/saetch/deightma_nodecs:latest
   build-client:
     runs-on: Ubuntu-latest
     steps:
