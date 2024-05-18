@@ -18,14 +18,14 @@ jobs:
     - run: docker-compose -f ./Cluster/docker-compose.yml up -d
     - run: docker-compose -f ./Cluster/docker-compose.yml down
     - run: docker login ghcr.io -u ${{ github.repository_owner }} -p ${{ secrets.GITHUB_TOKEN }}
-    - run: docker tag deightma_coordinator ghcr.io/${{ github.repository_owner }}/deightma_coordinator:latest
-    - run: docker push ghcr.io/${{ github.repository_owner }}/deightma_coordinator:latest
-    - run: docker tag deightma_bicubic_interpolation_service ghcr.io/${{ github.repository_owner }}/bicubic_interpolation_service:latest
-    - run: docker push ghcr.io/${{ github.repository_owner }}/bicubic_interpolation_service:latest
-    - run: docker tag deightma_master ghcr.io/${{ github.repository_owner }}/deightma_master:latest
-    - run: docker push ghcr.io/${{ github.repository_owner }}/deightma_master:latest
-    - run: docker tag deightma_nodecs ghcr.io/${{ github.repository_owner }}/deightma_nodecs:latest
-    - run: docker push ghcr.io/${{ github.repository_owner }}/deightma_nodecs:latest
+    - run: docker tag deightma_coordinator ${{ github.repository }}/deightma_coordinator:latest
+    - run: docker push ${{ github.repository }}/deightma_coordinator:latest
+    - run: docker tag deightma_bicubic_interpolation_service ${{ github.repository }}/bicubic_interpolation_service:latest
+    - run: docker push ${{ github.repository }}/bicubic_interpolation_service:latest
+    - run: docker tag deightma_master ${{ github.repository }}/deightma_master:latest
+    - run: docker push ${{ github.repository }}/deightma_master:latest
+    - run: docker tag deightma_nodecs ${{ github.repository }}/deightma_nodecs:latest
+    - run: docker push ${{ github.repository }}/deightma_nodecs:latest
   build-client:
     runs-on: Ubuntu-latest
     steps:
