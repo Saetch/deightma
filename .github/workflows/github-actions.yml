@@ -27,7 +27,7 @@ jobs:
         user: ${{ github.repository_owner }}
         names: |
           deightma_coordinator
-          deightma_bicubic_interpolation_service
+          bicubic_interpolation_service
           deightma_master
           deightma_nodecs
         keep: 1
