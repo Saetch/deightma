@@ -21,6 +21,7 @@ jobs:
     - uses: actions/delete-package-versions@v5
       with:
        package-name: 'ghcr.io/saetch/deightma_coordinator'
+       package-type: 'container'
        min-versions-to-keep: 1
     - run: |
         docker push ghcr.io/saetch/deightma_coordinator:latest
