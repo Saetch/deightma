@@ -14,13 +14,9 @@ public class Program{
 
     static int static_width_per_node = 2;
     static int static_height_per_node = 2;
-    static bool use_dummy = true;
 
     static int Main(String[] args){
     
-        if (Environment.GetEnvironmentVariable("USE_DUMMY") == "false") {
-            use_dummy = false;
-        }
         
         var builder = WebApplication.CreateSlimBuilder(args);
 
@@ -30,7 +26,7 @@ public class Program{
         });
 
         //configure the builder to accept external connections to the server ("0.0.0.0")
-        builder.WebHost.ConfigureKestrel(options => options.Listen(IPAddress.Any, 5552));
+        builder.WebHost.ConfigureKestrel(options => options.Listen(IPAddress.Any, 8080));
 
 
         var app = builder.Build();
@@ -39,14 +35,12 @@ public class Program{
         app.MapGet("/getValue/{values}",  async (string values) =>
         {   
             try {
-                if (use_dummy)
-                {
-                    var result = getDummyValue(values);
-                    return Results.Ok(result);
-                }else{
-                    var result = await getValue(values);
-                    return Results.Ok(result);
-                }
+
+                var result = await getValue(values);
+                Console.WriteLine("Returning result: " + result);
+
+                return Results.Ok(result.Replace("\"", "'"));
+            
             } catch (Exception e) {
                 return Results.BadRequest(e.Message);
             }
@@ -59,7 +53,7 @@ public class Program{
 
 
 
-    static async Task<XYValues> getValue(String input){
+    static async Task<String> getValue(String input){
         var inputs = input.Split('_');
         if (inputs.Length != 2)
             throw new ArgumentException("Input must be in the format 'x_y'");
@@ -71,8 +65,8 @@ public class Program{
         int y_int = (int)Math.Round(y_double);
 
         String node_name = find_correct_node(x_int, y_int);
-        double result_value = await get_value_from_node(node_name, input);
-        return new XYValues {x = x_double, y = y_double, value = result_value};
+        String result_value = await get_value_from_node(node_name, input);
+        return result_value;
     }
 
 
@@ -111,7 +105,7 @@ public class Program{
 
 
 
-        static async Task<double> get_value_from_node(String name, string input)
+        static async Task<String> get_value_from_node(String name, string input)
     {
         // Construct the URL for the external API endpoint
         string apiUrl = $"http://"+name+":5552/getValue/"+input;
@@ -128,12 +122,8 @@ public class Program{
             // Read the response content as a string
             string responseBody = await response.Content.ReadAsStringAsync();
             Console.WriteLine("Received response: " + responseBody);
-            XYValues? result = JsonSerializer.Deserialize<XYValues>(responseBody);
-            if (result == null)
-                throw new Exception("Error parsing response from node");
 
-            Console.WriteLine("Received value: " + result.value);
-            return result.value;
+            return responseBody;
         }
     }
 }
@@ -155,7 +145,10 @@ class XYValues
 
 
 [JsonSerializable(typeof(XYValues[]))]
+[JsonSerializable(typeof(XYValues))]
+[JsonSerializable(typeof(String))]
 internal partial class AppJsonSerializerContext : JsonSerializerContext
 {
 
 }
+

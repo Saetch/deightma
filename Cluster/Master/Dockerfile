@@ -19,7 +19,7 @@ RUN dotnet publish -p:PublishAot=true -p:StripSymbols=true -c Debug -o /app/publ
 
 # Switch to the runtime image
 FROM alpine:3.19 AS runtime
-RUN apk add libc6-compat
+RUN apk add libc6-compat --no-cache icu-libs
 
 # Set the working directory inside the Docker image
 WORKDIR /app

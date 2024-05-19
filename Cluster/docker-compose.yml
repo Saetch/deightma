@@ -9,11 +9,9 @@ services:
         context: ./Master
         dockerfile: Dockerfile
       ports:
-        - "5000:5552"
+        - "5000:8080"
       networks:
         - distr-network
-      environment:
-        - "USE_DUMMY=false"
     bicubic_interpolation_service: 
       container_name: bicubic_interpolation_service
       image: ghcr.io/saetch/bicubic_interpolation_service:latest

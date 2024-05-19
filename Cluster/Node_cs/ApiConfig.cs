@@ -1,10 +1,7 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
+
 using System.Net;
 using System.Net.Sockets;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
+
 
 namespace Node_cs
 {
@@ -52,7 +49,6 @@ namespace Node_cs
         public WebApplication setupServer(){
 
             var builder = WebApplication.CreateSlimBuilder();
-
             builder.Services.ConfigureHttpJsonOptions(options =>
             {
                 options.SerializerOptions.TypeInfoResolverChain.Insert(0, AppJsonSerializerContext.Default);
