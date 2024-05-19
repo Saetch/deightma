@@ -1,6 +1,7 @@
-use std::{ collections::HashMap, sync::{Arc, Weak}};
+use std:: sync::{Arc, Weak};
 
 use rand::Rng;
+use rustc_hash::{FxHashMap, FxHasher};
 use serde::Serialize;
 use tokio::sync::RwLock;
 
@@ -13,9 +14,9 @@ pub type DistributeableValue = Position;
 pub struct InteriorMutableState {
     init: RwLock<bool>,
     pub counter: RwLock<u32>,
-    pub known_nodes: RwLock<HashMap<Arc<NodeName>, NodeState>>,
+    pub known_nodes: RwLock<FxHashMap<Arc<NodeName>, NodeState>>,
     pub waiting_nodes: RwLock<Vec<Weak<NodeName>>>,  // ->
-    pub map_data: RwLock<HashMap<(i32, i32), Weak<NodeName>>>,  //originally, these were NodeName copies, but I changed them to Weak references to decrease memory usage
+    pub map_data: RwLock<FxHashMap<(i32, i32), Weak<NodeName>>>,  //originally, these were NodeName copies, but I changed them to Weak references to decrease memory usage
     pub perlin_noise_seed: RwLock<Option<u32>>,
     pub to_distribute: RwLock<Vec<DistributeableValue>>,
     pub to_replicate: RwLock<Vec<NodeName>>,
@@ -26,9 +27,9 @@ pub struct InteriorMutableState {
 pub struct ImmutableState {
     init: bool,
     pub counter: u32,
-    pub known_nodes: HashMap<NodeName, NodeState>,
+    pub known_nodes: FxHashMap<NodeName, NodeState>,
     pub waiting_nodes: Vec<NodeName>,
-    pub map_data: HashMap<String, String>,
+    pub map_data: FxHashMap<String, String>,
     pub perlin_noise_seed: Option<u32>,
     pub to_distribute: Vec<DistributeableValue>,
     pub to_replicate: Vec<NodeName>,
@@ -61,8 +62,8 @@ impl InteriorMutableState{
         Self {
             init: RwLock::new(false),
             counter: RwLock::new(0),
-            known_nodes: RwLock::new(HashMap::new()),
-            map_data: RwLock::new(HashMap::new()),
+            known_nodes: RwLock::new(FxHashMap::default()),
+            map_data: RwLock::new(FxHashMap::default()),
             perlin_noise_seed: RwLock::new(None),
             to_distribute: RwLock::new(Vec::new()),
             expected_values_per_node: RwLock::new(4),
@@ -117,7 +118,7 @@ impl InteriorMutableState{
 
 impl ImmutableState{
     pub async fn from_interior(state: & InteriorMutableState) -> Self {
-        let mut map_data = HashMap::new();
+        let mut map_data = FxHashMap::default();
         let orig_map_date = state.map_data.read().await;
         for (key, value) in orig_map_date.iter(){
             let mut key_string = "".to_owned();
