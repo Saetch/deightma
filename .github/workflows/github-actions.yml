@@ -21,6 +21,7 @@ jobs:
     - name: Delete old packages         
       uses: SmartsquareGmbH/delete-old-packages@v0.8.0
       with:
+        type: docker
         token: ${{ secrets.GITHUB_TOKEN }}
         repository: ${{ github.repository }}
         names: |
