@@ -24,7 +24,7 @@ jobs:
         type: docker
         token: ${{ secrets.GITHUB_TOKEN }}
         repository: ${{ github.repository }}
-        user: ${{ github.repository_owner }}
+        user: saetch
         names: |
           deightma_coordinator
           bicubic_interpolation_service
