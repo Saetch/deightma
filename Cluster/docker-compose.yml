@@ -4,7 +4,7 @@
 services:
     master:
       container_name: master
-      image: deightma_master
+      image: ghcr.io/saetch/deightma_master:latest
       build:
         context: ./Master
         dockerfile: Dockerfile
@@ -16,7 +16,7 @@ services:
         - "USE_DUMMY=false"
     bicubic_interpolation_service: 
       container_name: bicubic_interpolation_service
-      image: deightma_bicubic_interpolation_service
+      image: ghcr.io/saetch/bicubic_interpolation_service:latest
       build:
         context: ./bicubic_interpolation_service
         dockerfile: Dockerfile
@@ -25,7 +25,7 @@ services:
       networks:
         - distr-network
     coordinator:
-      image: deightma_coordinator
+      image: ghcr.io/saetch/deightma_coordinator:latest
       build:
         context: ./coordinator
         dockerfile: Dockerfile
@@ -40,7 +40,7 @@ services:
         replicas: 1              ## this is needed as of now. Do not change this or the values will be distributed unevenly
       restart: always 
     nodecs:
-      image: deightma_nodecs
+      image: ghcr.io/saetch/deightma_nodecs:latest
       build:
         context: ./Node_cs
         dockerfile: Dockerfiles/aot/Dockerfile
