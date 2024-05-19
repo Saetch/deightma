@@ -20,7 +20,7 @@ jobs:
     - run: docker login ghcr.io -u ${{ github.repository_owner }} -p ${{ secrets.GITHUB_TOKEN }}       
     - uses: actions/delete-package-versions@v5
       with:
-       package-name: ghcr.io/saetch/deightma_coordinator
+       package-name: 'ghcr.io/saetch/deightma_coordinator'
        min-versions-to-keep: 1
     - run: |
         docker push ghcr.io/saetch/deightma_coordinator:latest
