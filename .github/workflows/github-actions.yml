@@ -18,19 +18,10 @@ jobs:
     - run: docker-compose -f ./Cluster/docker-compose.yml up -d
     - run: docker-compose -f ./Cluster/docker-compose.yml down
     - run: docker login ghcr.io -u ${{ github.repository_owner }} -p ${{ secrets.GITHUB_TOKEN }}       
-    - name: Delete old packages         
-      uses: SmartsquareGmbH/delete-old-packages@v0.8.0
+    - uses: actions/delete-package-versions@v5
       with:
-        type: docker
-        token: ${{ secrets.GITHUB_TOKEN }}
-        repository: ${{ github.repository }}
-        user: saetch
-        names: |
-          deightma_coordinator
-          bicubic_interpolation_service
-          deightma_master
-          deightma_nodecs
-        keep: 1
+       package-name: ghcr.io/saetch/deightma_coordinator
+       min-versions-to-keep: 1
     - run: |
         docker push ghcr.io/saetch/deightma_coordinator:latest
     - run: |
