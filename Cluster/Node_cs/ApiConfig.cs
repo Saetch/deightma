@@ -124,6 +124,10 @@ namespace Node_cs
                 throw new Exception("Received invalid response from coordinator service: " + responseString);
             }
             //This is an example response: {"HANDLE":{"positions":[{"x":0,"y":0,"value":0.6816054984788531},{"x":1,"y":0,"value":0.6952797360508614},{"x":0,"y":1,"value":3.0950656335878035},{"x":1,"y":1,"value":2.0697533239357435}]}}
+            if (!responseString.Contains("x") || !responseString.Contains("y") || !responseString.Contains("value")){
+                Console.WriteLine("Received null response from coordinator service ... ");
+                return;
+            }
             String valuesPart = responseString.Split("[{")[1];
             String [] valuesStrings = valuesPart.Split("{");
             foreach (String valueString in valuesStrings){

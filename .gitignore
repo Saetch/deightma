@@ -18,4 +18,8 @@ Cluster/bicubic_interpolation_service/target
 Cluster/coordinator/target
 Cluster/coordinator/.vs
 Cluster/coordinator/.vscode
+Cluster/hasher_service/target
+Cluster/hasher_service/.vs
+Cluster/hasher_service/.vscode
+Cluster/hasher_service/.launch
 token

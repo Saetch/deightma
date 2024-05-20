@@ -51,6 +51,16 @@ services:
         replicas: 4        
       depends_on:
         - coordinator
+    hasher_service:
+      image: ghcr.io/saetch/hasher_service:latest
+      build:
+        context: ./hasher_service
+        dockerfile: Dockerfile
+      networks:
+        - distr-network
+      deploy:
+        mode: replicated
+        replicas: 1
 networks:
   distr-network:
     driver: bridge

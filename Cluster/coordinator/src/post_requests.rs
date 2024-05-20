@@ -67,7 +67,7 @@ pub async fn register(path: web::Path<String>, data: web::Data<InteriorMutableSt
     }
 
     let mut to_distribute = data.to_distribute.write().await;
-    return HttpResponse::Ok().json(web::Json(NodeRegisterResponse::HANDLE { positions: to_distribute.clone() }));
+    return HttpResponse::Ok().json(web::Json(NodeRegisterResponse::HANDLE { positions: to_distribute.drain(..).collect() }));
     
 
 
