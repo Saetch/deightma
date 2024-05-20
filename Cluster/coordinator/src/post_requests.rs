@@ -1,9 +1,11 @@
 
-use std::sync::{Arc, Weak};
+use std::{borrow::BorrowMut, hash::Hasher, sync::{Arc, Weak}};
 
 use actix_web::{web, HttpResponse, Responder};
+use rustc_hash::FxHasher;
+use serde::de::value;
 
-use crate::{communication::NodeRegisterResponse, state::{InteriorMutableState, NodeOccupation, NodeState}};
+use crate::{balancing::distribute_value, communication::NodeRegisterResponse, state::{InteriorMutableState, NodeOccupation, NodeState, HASH_RING_SIZE}};
 
 
 
@@ -14,71 +16,60 @@ pub async fn register(path: web::Path<String>, data: web::Data<InteriorMutableSt
     //check if node is already registered
     let node_name = path.into_inner();
     let mut nodes_map = data.known_nodes.write().await;
-    if nodes_map.contains_key(&node_name) {
-        return HttpResponse::Conflict().body(format!("Node {} already registered", node_name));
+    let mut hasher = FxHasher::default();
+    hasher.write(node_name.as_bytes());
+    let hash_value = hasher.finish() as u16 % HASH_RING_SIZE;
+    drop(hasher);
+    if nodes_map.iter().any(|x| x.name == node_name){
+        return HttpResponse::Conflict().body("Node already registered");
+    }
+    let is_conflicted;
+    if nodes_map.iter().any(|x| x.hash_value == hash_value){
+        is_conflicted = true;
+    }else{
+        is_conflicted = false;
     }
     //insert node into known_nodes
-    let cloned = node_name.clone();
-    let arc_node = Arc::new(node_name);
-    nodes_map.insert(arc_node.clone(), NodeState {
-        name: cloned.clone(),
+    let node_entry = NodeState {
+        hash_value,
+        name: node_name.clone(),
         state: NodeOccupation::UNINITIALIZED,
-    });
+        hash_conflict: is_conflicted,
+    };
+    if is_conflicted {
+        println!("Node {} has a hash conflict", &node_name);
+        todo!("Handle hash conflict");
+    }
+    let arc_node = Arc::new(node_entry);
+    nodes_map.push(arc_node.clone());
     drop(nodes_map);
     //check if there are values to distribute
-    if data.to_distribute.read().await.is_empty() {
-
+    if data.is_fitted() {
+        //TODO! Test this if it actually works!
+        let new_node = NodeState {
+            hash_value,
+            name: node_name.clone(),
+            state: NodeOccupation::WAITING,
+            hash_conflict: is_conflicted,
+        };
+        let mut known_nodes = data.known_nodes.write().await;
+        let index = known_nodes.iter().position(|x| x.name == node_name).unwrap();
+        known_nodes[index] = Arc::new(new_node);
+        known_nodes.sort_by(|a, b| a.hash_value.cmp(&b.hash_value));
+        println!("Known nodes is now: {:?}", known_nodes.iter().map(|x| x.name.clone()).collect::<Vec<String>>());
+        drop(known_nodes);
         //if no values to distribute, add node to waiting_nodes for later distribution or replication/backup
         let mut waiting_nodes = data.waiting_nodes.write().await;
         waiting_nodes.push(Arc::downgrade(&arc_node));
         drop(waiting_nodes);
-        let mut nodes_map = data.known_nodes.write().await;
-        let node_state = nodes_map.get_mut(&cloned).unwrap();
-        *node_state = NodeState {
-            name: cloned.clone(),
-            state: NodeOccupation::WAITING,
-        };
-        drop(nodes_map);
+
         return HttpResponse::Ok().json(web::Json(NodeRegisterResponse::WAIT));
     }
 
-    //if there are values to distribute, distribute them
-    let mut vec_positions = Vec::new();
-    let number_to_distribute = *data.expected_values_per_node.read().await;
     let mut to_distribute = data.to_distribute.write().await;
-    let to_drain = u32::min(number_to_distribute,to_distribute.len() as u32);
+    return HttpResponse::Ok().json(web::Json(NodeRegisterResponse::HANDLE { positions: to_distribute.clone() }));
+    
 
-    let mut iter =  to_distribute.drain(0..to_drain as usize);
-    while let Some(node_val_to_distribute) = iter.next() {
-        vec_positions.push(node_val_to_distribute.clone());
-    }
-    drop(iter);
-    drop(to_distribute);
-    let mut nodes_map = data.known_nodes.write().await;
-    let node_state = nodes_map.get_mut(&cloned).unwrap();
-    *node_state = NodeState {
-        name: cloned.clone(),
-        state: NodeOccupation::WORKING,
-    };
-    let string_ref = nodes_map.keys().find(|key| key.as_ref().eq(&cloned));
-    let str_ref : Weak<String>;
-    if let Some(string_r) = string_ref {
-        println!("Node {} is working", &string_r);
-        str_ref = Arc::downgrade(string_r);
-    }else{
-        return HttpResponse::InternalServerError().body("Node not found in known_nodes!");
-    }
-    drop(nodes_map);
-    let mut map = data.map_data.write().await;
-    //find key and add reference to that key
-  
-    for pos in vec_positions.iter(){
-        map.insert((pos.x, pos.y), str_ref.clone());
-    }
-    drop(map);
-    let response = NodeRegisterResponse::HANDLE{positions: vec_positions};
-
-    HttpResponse::Ok().json(web::Json(response))
 
 }
 
@@ -98,4 +89,17 @@ pub async fn initialize(data: web::Data<InteriorMutableState>) -> impl Responder
         return HttpResponse::Conflict().body("Already initialized");
     }
     HttpResponse::Ok().body("Initialized")
+}
+
+pub async fn upload_value(path: web::Path<(i32, i32, f64)>, data: web::Data<InteriorMutableState>) -> impl Responder {
+    let (x, y, value) = path.into_inner();
+    if data.known_nodes.read().await.is_empty() {
+        let mut to_distribute = data.to_distribute.write().await;
+        to_distribute.push((x, y, value).into());
+        HttpResponse::Ok().body("Value uploaded, waiting for node to be available")
+    }else{
+        distribute_value(x, y, value, data).await;
+        HttpResponse::Ok().body("Value uploaded and distributed")
+    }
+
 }

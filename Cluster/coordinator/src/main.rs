@@ -2,6 +2,7 @@ use actix_web::{web, App, HttpResponse, HttpServer, Responder, middleware::Logge
 use env_logger::Env;
 use post_requests::{initialize, register, set_values_per_node};
 mod state;
+mod balancing;
 mod post_requests;
 mod get_requests;
 mod communication;
@@ -36,10 +37,10 @@ async fn main() -> std::io::Result<()> {
                 .route("/set_expected_values_per_node/{values}", web::put().to(set_values_per_node))
                 .route("/set_expected_values_per_node/{values}", web::get().to(set_values_per_node))
                 .route("/initialize", web::post().to(initialize))
-                .route("/initialize", web::get().to(initialize))
                 .route("/get_complete_state", web::get().to(get_requests::get_complete_state))
                 .route("/get_node/{x}/{y}", web::get().to(get_requests::get_node_for_point))
                 .route("/getNode/{x}/{y}", web::get().to(get_requests::get_node_for_point))
+                .route("/upload_value/{x}/{y}/{value}", web::post().to(post_requests::upload_value))
                 .route("/hey", web::get().to(manual_hello)),
     )
             .route("/ping", web::get().to(ping))
