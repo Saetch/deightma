@@ -35,7 +35,7 @@ services:
         - "ENVIRONMENT=Development"
       deploy:
         mode: replicated
-        replicas: 1              ## this is needed as of now. Do not change this or the values will be distributed unevenly
+        replicas: 1              ## this is needed as of now. Do not change this or the values will be distributed unevenly. The coordinator is yet to be made replicatable
       restart: always 
     nodecs:
       image: ghcr.io/saetch/deightma_nodecs:latest
@@ -53,6 +53,8 @@ services:
         - coordinator
     hasher_service:
       image: ghcr.io/saetch/hasher_service:latest
+      ports:
+        - "5002:8080"       ## this is for debug purposes, the service does not need to be exposed to the host at all
       build:
         context: ./hasher_service
         dockerfile: Dockerfile
