@@ -10,6 +10,6 @@ RUN cargo build --release
 
 FROM alpine:3.19.1
 
-COPY --from=BUILDER /app/target/release/coordinator /app/
+COPY --from=BUILDER /app/target/release/hasher_service /app/
 WORKDIR /app/
 CMD ["./hasher_service"]
