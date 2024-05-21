@@ -4,7 +4,8 @@ RUN apk add --no-cache musl-dev musl-utils linux-headers
 COPY ./src/ ./app/src/
 COPY ./Cargo.toml ./Cargo.lock /app/
 WORKDIR /app/
-
+ENV OPENSSL_DIR=/usr
+ENV PKG_CONFIG_PATH=/usr/lib/pkgconfig
 RUN cargo build --release
 
 

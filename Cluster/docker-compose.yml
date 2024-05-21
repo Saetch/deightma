@@ -36,7 +36,9 @@ services:
       deploy:
         mode: replicated
         replicas: 1              ## this is needed as of now. Do not change this or the values will be distributed unevenly. The coordinator is yet to be made replicatable
-      restart: always 
+      restart: no 
+      depends_on:
+        - hasher_service
     nodecs:
       image: ghcr.io/saetch/deightma_nodecs:latest
       build:

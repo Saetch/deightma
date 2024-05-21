@@ -1,7 +1,6 @@
-use std::{borrow::{Borrow, BorrowMut},  sync::{Arc, Weak}};
+use std::sync::{Arc, Weak};
 
 use rand::Rng;
-use rustc_hash::{FxHashMap, FxHasher};
 use serde::Serialize;
 use tokio::sync::RwLock;
 
@@ -10,8 +9,6 @@ use crate::communication::Position;
 pub type NodeName = String;
 pub type DistributeableValue = Position;
 pub type HashValue = u16;
-
-pub const HASH_RING_SIZE: u16 = 2048;
 
 #[derive(Debug)]
 pub struct InteriorMutableState {

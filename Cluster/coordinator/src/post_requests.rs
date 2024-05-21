@@ -1,25 +1,30 @@
 
-use std::{borrow::BorrowMut, hash::Hasher, sync::{Arc, Weak}};
+use std::{   hash::Hasher, sync::Arc};
 
 use actix_web::{web, HttpResponse, Responder};
-use rustc_hash::FxHasher;
-use serde::de::value;
+use awc::Client;
+use futures::join;
 
-use crate::{balancing::distribute_value, communication::NodeRegisterResponse, state::{InteriorMutableState, NodeOccupation, NodeState, HASH_RING_SIZE}};
+use crate::{balancing::distribute_value, communication::NodeRegisterResponse, state::{InteriorMutableState, NodeOccupation, NodeState}};
 
-
+const HASHER_SERVICE_URL : &str = "http://hasher_service:8080/hash/";
 
 pub async fn register(path: web::Path<String>, data: web::Data<InteriorMutableState>) -> impl Responder {
+    let client = Client::default();
     let mut counter = data.counter.write().await;
     *counter += 1;
     drop(counter);
     //check if node is already registered
     let node_name = path.into_inner();
-    let mut nodes_map = data.known_nodes.write().await;
-    let mut hasher = FxHasher::default();
-    hasher.write(node_name.as_bytes());
-    let hash_value = hasher.finish() as u16 % HASH_RING_SIZE;
-    drop(hasher);
+    let fut_map = data.known_nodes.write();
+    let url = HASHER_SERVICE_URL.to_string() + &node_name;
+    let fut_hash = async {
+        client.get(url).send().await.unwrap().body().await.unwrap()
+    };
+    let (hash_val_res, mut nodes_map) = join!(fut_hash, fut_map); //use Rust's async feature in order to wait for both futures to complete
+    let text = String::from_utf8(hash_val_res.to_vec()).unwrap();
+    println!("Node hash generated: {:?}", text);
+    let hash_value = text.parse::<u16>().unwrap();
     if nodes_map.iter().any(|x| x.name == node_name){
         return HttpResponse::Conflict().body("Node already registered");
     }
@@ -52,17 +57,18 @@ pub async fn register(path: web::Path<String>, data: web::Data<InteriorMutableSt
             state: NodeOccupation::WAITING,
             hash_conflict: is_conflicted,
         };
-        let mut known_nodes = data.known_nodes.write().await;
-        let index = known_nodes.iter().position(|x| x.name == node_name).unwrap();
-        known_nodes[index] = Arc::new(new_node);
-        known_nodes.sort_by(|a, b| a.hash_value.cmp(&b.hash_value));
-        println!("Known nodes is now: {:?}", known_nodes.iter().map(|x| x.name.clone()).collect::<Vec<String>>());
-        drop(known_nodes);
-        //if no values to distribute, add node to waiting_nodes for later distribution or replication/backup
-        let mut waiting_nodes = data.waiting_nodes.write().await;
-        waiting_nodes.push(Arc::downgrade(&arc_node));
-        drop(waiting_nodes);
-
+        let fut1 = async {
+            let mut known_nodes = data.known_nodes.write().await;
+            let index = known_nodes.iter().position(|x| x.name == node_name).unwrap();
+            known_nodes[index] = Arc::new(new_node);
+            known_nodes.sort_by(|a, b| a.hash_value.cmp(&b.hash_value));
+            println!("Known nodes is now: {:?}", known_nodes.iter().map(|x| x.name.clone()).collect::<Vec<String>>());
+        };
+        let fut2 = async {
+            let mut waiting_nodes = data.waiting_nodes.write().await;
+            waiting_nodes.push(Arc::downgrade(&arc_node));
+        };
+        join!(fut1, fut2);
         return HttpResponse::Ok().json(web::Json(NodeRegisterResponse::WAIT));
     }
 
