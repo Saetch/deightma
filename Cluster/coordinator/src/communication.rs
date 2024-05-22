@@ -1,4 +1,4 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Clone)]
 pub enum NodeRegisterResponse{
@@ -10,7 +10,7 @@ pub enum NodeRegisterResponse{
 }
 
 
-#[derive(Debug, Serialize, Clone, Copy)]
+#[derive(Debug, Serialize, Clone, Copy, Deserialize)]
 pub struct Position{
     pub(crate) x: i32,
     pub(crate) y: i32,

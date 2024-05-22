@@ -6,6 +6,7 @@ mod balancing;
 mod post_requests;
 mod get_requests;
 mod communication;
+mod deal_with_nodes;
 async fn manual_hello() -> impl Responder {
     HttpResponse::Ok().body("Hey there!")
 }

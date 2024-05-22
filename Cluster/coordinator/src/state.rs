@@ -15,7 +15,7 @@ pub struct InteriorMutableState {
     init: RwLock<bool>,
     pub counter: RwLock<u32>,
     pub known_nodes: RwLock<Vec<Arc<NodeState>>>,
-    pub waiting_nodes: RwLock<Vec<Weak<NodeState>>>,  // ->
+    pub waiting_nodes: RwLock<Vec<Arc<NodeState>>>,  // ->
     pub perlin_noise_seed: RwLock<Option<u32>>,
     pub to_distribute: RwLock<Vec<DistributeableValue>>,
     pub to_replicate: RwLock<Vec<NodeName>>,
@@ -142,7 +142,7 @@ impl ImmutableState{
             to_distribute: state.to_distribute.read().await.clone(),
             expected_values_per_node: *state.expected_values_per_node.read().await,
             to_replicate: state.to_replicate.read().await.clone(),
-            waiting_nodes: state.waiting_nodes.read().await.clone().into_iter().map(|weak| weak.upgrade().unwrap().name.to_string()).collect(),
+            waiting_nodes: state.waiting_nodes.read().await.clone().into_iter().map(|weak| weak.name.to_string()).collect(),
         }
     }
 }

@@ -50,8 +50,8 @@ public class Program{
 
 
 
-
-
+[JsonSerializable(typeof(List<XYValues>))]
+[JsonSerializable(typeof(XYValues))]
 [JsonSerializable(typeof(XYValues[]))]
 internal partial class AppJsonSerializerContext : JsonSerializerContext
 {

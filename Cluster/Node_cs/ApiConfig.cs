@@ -9,7 +9,6 @@ namespace Node_cs
     {
 
         public Dictionary<Tuple<int, int>, double> savedValues = new Dictionary<Tuple<int, int>, double>();
-        public Dictionary<Tuple<int, int>, String> exteriorValuesInNodes = new Dictionary<Tuple<int, int>, String>();
         public String BICUBIC_INTERPOLATION_SERVICE_URL = "http://bicubic_interpolation_service:8080/calculate";
         public String hostname = Environment.GetEnvironmentVariable("HOSTNAME");
         public String COORDINATOR_SERVICE_URL = "coordinator";
@@ -109,6 +108,17 @@ namespace Node_cs
                 } catch (Exception e) {
                     return Results.BadRequest(e.Message);
                 }
+            });
+            app.MapGet("/getAllSavedValues", () =>
+            {
+                //go through all keys in savedvalues
+                //return a list of all keys and values
+                List<XYValues> values = new List<XYValues>();
+                foreach (KeyValuePair<Tuple<int, int>, double> entry in savedValues)
+                {
+                    values.Add(new XYValues { x = entry.Key.Item1, y = entry.Key.Item2, value = entry.Value });
+                }
+                return Results.Ok(values);
             });
         }
 

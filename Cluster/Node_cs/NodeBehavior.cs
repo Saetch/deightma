@@ -139,7 +139,9 @@ namespace Node_cs
 
     public static String GetHoldingNode(int x, int y, ApiConfig config){
         Tuple<int, int> key = new Tuple<int, int>(x, y);
-        if (config.exteriorValuesInNodes.TryGetValue(key, out string? value)){
+        
+        //this was the old way of getting the node faster, but since the values are now redistributed automatically, this needs to be reworked        
+/*        if (config.exteriorValuesInNodes.TryGetValue(key, out string? value)){
             TcpClient tcpClient = new TcpClient();
             var result = tcpClient.BeginConnect(value, 5552, null, null);
             var success = result.AsyncWaitHandle.WaitOne(TimeSpan.FromMilliseconds(22));
@@ -155,7 +157,7 @@ namespace Node_cs
             }
         }  else {
             Console.WriteLine("No information about node found, requesting new information ... ");
-        }
+        } */
         
         TcpClient tcpClient2 = new TcpClient();
         var result2 = tcpClient2.BeginConnect(config.COORDINATOR_SERVICE_URL, config.PORT, null, null);
@@ -178,7 +180,6 @@ namespace Node_cs
         HttpClient client = new HttpClient();
         var response = client.GetAsync("http://" + config.COORDINATOR_SERVICE_URL + ":"+ config.PORT+"/organize/get_node/"+x+"/"+y).Result;
         var node = response.Content.ReadAsStringAsync().Result;
-        config.exteriorValuesInNodes[key] = node;
         return node;
         
     }
