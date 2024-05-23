@@ -7,7 +7,7 @@ use futures::join;
 
 use crate::{communication::NodeRegisterResponse, deal_with_nodes, state::{InteriorMutableState, NodeOccupation, NodeState}};
 
-const HASHER_SERVICE_URL : &str = "http://hasher_service:8080/hash/";
+pub const HASHER_SERVICE_URL : &str = "http://hasher_service:8080/hash/";
 
 pub async fn register(path: web::Path<String>, data: web::Data<InteriorMutableState>) -> impl Responder {
     let client = Client::default();

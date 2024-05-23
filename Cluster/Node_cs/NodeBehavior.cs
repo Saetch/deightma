@@ -234,7 +234,7 @@ namespace Node_cs
                     string responseBody = await response.Content.ReadAsStringAsync();
                     Console.WriteLine("Received response: " + responseBody);
                     
-                    values[i + 1][j + 1] = responseBody == "null" ? null : Double.Parse(responseBody, CultureInfo.InvariantCulture);
+                    values[i + 1][j + 1] = responseBody.Equals("\"null\"") ? null : Double.Parse(responseBody, CultureInfo.InvariantCulture);
                 }
             }        
             for (int i = 0; i < 4; i++)

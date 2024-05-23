@@ -22,13 +22,16 @@ pub async fn redistribute_values(data: Arc<InteriorMutableState>, hash_value: u1
             state: crate::state::NodeOccupation::WORKING,
             hash_conflict,
         });
-        let to_distribute_from = if index != 0 {index -1} else {all_known_nodes.len()-1} ;  //the values are distributed to the next hash value, so getting the one before the current one yields the one that might have a share of values to redistribute
+        let to_distribute_from = if index != all_known_nodes.len()-1 {index + 1} else {0} ;  //the values are distributed to the next hash value, so getting the next one after the  current one yields the one that might have a share of values to redistribute
         let node_to_distribute_from = &all_known_nodes[to_distribute_from];
-        let url = format!("http://{}:5552/getAllSavedValues", node_to_distribute_from.name);
+        let url = format!("http://{}:5552/deleteSavedValuesBelow/{}", node_to_distribute_from.name,  hash_value.to_string());
         println!("URL: {}", url);
-        let response = awc::Client::default().get(url).send().await.unwrap().body().await.unwrap();
+        //If trying to deal with nonexistent or non-responding node, edit here!
+        let response = awc::Client::default().post(url).send().await.unwrap().body().await.unwrap();
+        println!("Response: {:?}", response);
         let values_to_distribute : Vec<Position> = serde_json::from_slice(&response).unwrap();
         println!("Values to distribute: {:?}", values_to_distribute);
+        positions_vec = values_to_distribute;
     }else{
         panic!("Node with hash value {} not found in known_nodes with data: {:?}", hash_value, data);
     }

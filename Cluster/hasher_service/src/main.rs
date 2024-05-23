@@ -23,7 +23,6 @@ async fn main() -> std::io::Result<()>{
             .route("/get_ringhash_length", actix_web::web::get().to(get_hashring_length))
             .route("/get_hashring_size", actix_web::web::get().to(get_hashring_length))
             .route("/get_hashring_length", actix_web::web::get().to(get_hashring_length))
-
     })
     .workers(8)
     .keep_alive(Duration::from_millis(10))
