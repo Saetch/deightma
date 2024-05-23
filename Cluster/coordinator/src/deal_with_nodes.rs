@@ -34,7 +34,10 @@ pub async fn redistribute_values(data: Arc<InteriorMutableState>, hash_value: u1
     }
     
 
-    NodeRegisterResponse::HANDLE { positions: Vec::new() }
+    NodeRegisterResponse::HANDLE{
+        hash_value,
+        positions: positions_vec,
+    }
 }
 
 

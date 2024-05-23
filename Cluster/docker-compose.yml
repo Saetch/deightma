@@ -53,6 +53,7 @@ services:
         replicas: 4        
       depends_on:
         - coordinator
+        - hasher_service
     hasher_service:
       image: ghcr.io/saetch/hasher_service:latest
       ports:

@@ -87,7 +87,7 @@ pub async fn register(path: web::Path<String>, data: web::Data<InteriorMutableSt
             state: NodeOccupation::WORKING,
             hash_conflict: is_conflicted,
         });
-        return HttpResponse::Ok().json(web::Json(NodeRegisterResponse::HANDLE { positions: to_distribute.drain(..).collect() }));
+        return HttpResponse::Ok().json(web::Json(NodeRegisterResponse::HANDLE { hash_value: hash_value, positions: to_distribute.drain(..).collect() }));
     }
     
 

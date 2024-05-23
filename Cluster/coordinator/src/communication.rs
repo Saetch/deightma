@@ -5,9 +5,16 @@ use serde::{Deserialize, Serialize};
 pub enum NodeRegisterResponse{
     WAIT,
     HANDLE{
+        hash_value: u16,
         positions: Vec<Position>,
     },
     DONE,
+}
+
+pub enum NodeCommand{
+    HOLDVALUES{
+        positions: Vec<Position>,
+    }
 }
 
 

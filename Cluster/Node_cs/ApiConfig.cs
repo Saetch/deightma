@@ -14,6 +14,8 @@ namespace Node_cs
         public String hostname = Environment.GetEnvironmentVariable("HOSTNAME");
         public String COORDINATOR_SERVICE_URL = "coordinator";
         public int PORT = 8080;
+
+        public ushort ownerHash = 0;
         public int initializeConfigValues()
         {
             Console.WriteLine("hostname is: "+ this.hostname);
@@ -126,7 +128,7 @@ namespace Node_cs
                 try {
                     Console.WriteLine("Received deleteSavedValuesBelow-call with params: " + hash );
                     var retVal = await NodeBehavior.DeleteSavedValuesBelow(hash, this);
-                    return Results.Ok("TODO! Implement this!");
+                    return Results.Ok(retVal);
                 } catch (Exception e) {
                     return Results.BadRequest(e.Message);
                 }
@@ -137,6 +139,8 @@ namespace Node_cs
             
         }
 
+
+        //This expects the response to be in exact format
         private void DealWithResponse(HttpResponseMessage response){
             String responseString = response.Content.ReadAsStringAsync().Result;
             Console.WriteLine("Received response from coordinator service: " + responseString);
@@ -148,11 +152,15 @@ namespace Node_cs
                 Console.WriteLine("Received invalid response from coordinator service: " + responseString);
                 throw new Exception("Received invalid response from coordinator service: " + responseString);
             }
-            //This is an example response: {"HANDLE":{"positions":[{"x":0,"y":0,"value":0.6816054984788531},{"x":1,"y":0,"value":0.6952797360508614},{"x":0,"y":1,"value":3.0950656335878035},{"x":1,"y":1,"value":2.0697533239357435}]}}
+            //This is an example response: {"HANDLE":{"hash_value":8782,"positions":[{"x":0,"y":0,"value":0.6816054984788531},{"x":1,"y":0,"value":0.6952797360508614},{"x":0,"y":1,"value":3.0950656335878035},{"x":1,"y":1,"value":2.0697533239357435}]}}
             if (!responseString.Contains("x") || !responseString.Contains("y") || !responseString.Contains("value")){
                 Console.WriteLine("Received null response from coordinator service ... ");
                 return;
             }
+            String hashVal = responseString.Split("\"hash_value\":")[1].Split(",")[0];
+            UInt16 hash = UInt16.Parse(hashVal);
+            this.ownerHash = hash;
+            Console.WriteLine("Set owner hashValue to: " + hash);
             String valuesPart = responseString.Split("[{")[1];
             String [] valuesStrings = valuesPart.Split("{");
             foreach (String valueString in valuesStrings){

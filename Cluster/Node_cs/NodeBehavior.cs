@@ -257,6 +257,7 @@ namespace Node_cs
 
         internal static async Task<List<XYValues>> DeleteSavedValuesBelow(string hash, ApiConfig api){
             
+            //Get all possible hashes for the given points
             List<Position> hashTasks = new List<Position>();
 
             foreach (Tuple<int, int> key in api.savedValues.Keys){
@@ -265,22 +266,42 @@ namespace Node_cs
             var result = await QueryHasherForPoints(hashTasks);
 
             short hashVal;
-            try{
+            try
+            {
                 hashVal = short.Parse(hash);
-            }catch (Exception _){
-                throw new Exception("Invalid hash value: " + hash +" Exception: " + _.Message);
+            }catch (Exception e){
+                throw new Exception("Invalid hash value: " + hash +" Exception: " + e.Message);
             }
             
-
-
+            var resultXYValues = new List<XYValues>();
+            //fin all values that are below the given hash value in the ringhash
             foreach (HashedPosition pointHash in result)
             {
-                if (pointHash.hash <= hashVal)
-                {
-                    api.savedValues.Remove(new Tuple<int, int>(pointHash.x, pointHash.y));
+                //check wether or not the hash barrier wraps around
+                if (hashVal < api.ownerHash){
+                    if (pointHash.hash > hashVal && pointHash.hash < api.ownerHash ){     //value is above the hash value, no wrapping
+                        continue;  
+                    }
+                }else{
+                    if(pointHash.hash > hashVal || pointHash.hash < api.ownerHash){  //value is between hashvalue and owner hash, wrapping
+                        continue;
+                    }
                 }
+                Console.WriteLine("hashval: " + hashVal + " ownerHash: " + api.ownerHash + " pointHash: " + pointHash.hash);
+                var tuple = new Tuple<int, int>(pointHash.x, pointHash.y);
+                var ret = api.savedValues.ContainsKey(tuple);
+                if(!ret) throw new Exception("Tried removing nonexistent value");
+
+                double outp;
+                api.savedValues.TryGetValue(new Tuple<int, int>(pointHash.x, pointHash.y), out outp);
+                var removed = api.savedValues.Remove(new Tuple<int, int>(pointHash.x, pointHash.y));
+                if (!removed) throw new Exception("Failed to remove value");
+                resultXYValues.Add(new XYValues { x = pointHash.x, y = pointHash.y, value = outp });
+                
             }
-            throw new NotImplementedException();
+
+            return resultXYValues;
+            
         }
 
 
@@ -293,12 +314,7 @@ namespace Node_cs
             using (HttpClient httpClient = new HttpClient()){
                 string baseUrl = "http://hasher_service:8080/hash_multiple";
                 Console.WriteLine("Making request to: " + baseUrl);
-                List<Position> queryPositions = new List<Position>();
-                for (int i = 0; i < 2500; i++)
-                {
-                    queryPositions.Add(new Position { x = i, y = i });
-                }
-                var json = JsonSerializer.Serialize(queryPositions, options);
+                var json = JsonSerializer.Serialize(positions, options);
                 var query = "?vec=" + json.Replace("[{","").Replace("}]","").Replace("},{",";").Replace("\"","");
                 string apiUrl = baseUrl + query;
                 Console.WriteLine("Making request to: " + apiUrl);
@@ -332,15 +348,15 @@ namespace Node_cs
         string[] objects = responseBody.Replace("[{","").Replace("}]","").Split("},{");
         foreach (string obj in objects){
             string[] parts = obj.Split(",");
-            var xInput = parts[0].Split(":");
-            var yInput = parts[1].Split(":");
-            var hashInput = parts[2].Split(":");
-            if (!xInput.Equals("\"x\"") || !yInput.Equals("\"y\"") || !hashInput.Equals("\"hash\"")){
+            var xInputs = parts[0].Split(":");
+            var yInputs = parts[1].Split(":");
+            var hashInputs = parts[2].Split(":");
+            if (!xInputs[0].Equals("\"x\"") || !yInputs[0].Equals("\"y\"") || !hashInputs[0].Equals("\"hash\"")){
                 throw new Exception("Invalid response from hasher service: " + responseBody);
             }
-            int x = Int32.Parse(parts[0].Split(":")[1]);
-            int y = Int32.Parse(parts[1].Split(":")[1]);
-            ushort hash = UInt16.Parse(parts[2].Split(":")[1]);
+            int x = Int32.Parse(xInputs[1]);
+            int y = Int32.Parse(yInputs[1]);
+            ushort hash = UInt16.Parse(hashInputs[1]);
             ret.Add(new HashedPosition { x = x, y = y, hash = hash });
         }
         return ret;
