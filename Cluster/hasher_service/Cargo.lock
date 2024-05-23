@@ -536,6 +536,8 @@ version = "0.1.0"
 dependencies = [
  "actix-web",
  "rustc-hash",
+ "serde",
+ "serde_derive",
 ]
 
 [[package]]

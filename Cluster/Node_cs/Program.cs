@@ -1,13 +1,3 @@
-using System.ComponentModel;
-using System.Globalization;
-using System.Net;
-using System.Runtime.CompilerServices;
-using System.Text.Json.Serialization;
-using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.AspNetCore.Server.Kestrel.Core;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.ObjectPool;
-using Microsoft.Extensions.Options;
 using Node_cs;
 public class Program{
 
@@ -49,11 +39,3 @@ public class Program{
 
 
 
-
-[JsonSerializable(typeof(List<XYValues>))]
-[JsonSerializable(typeof(XYValues))]
-[JsonSerializable(typeof(XYValues[]))]
-internal partial class AppJsonSerializerContext : JsonSerializerContext
-{
-
-}

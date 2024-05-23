@@ -1,4 +1,6 @@
-use std::{borrow::BorrowMut, sync::Arc};
+use std::sync::Arc;
+
+use actix_web::web;
 
 use crate::{communication::{NodeRegisterResponse, Position}, state::{InteriorMutableState, NodeState}};
 
@@ -36,3 +38,10 @@ pub async fn redistribute_values(data: Arc<InteriorMutableState>, hash_value: u1
 }
 
 
+pub async fn distribute_value(x: i32, y: i32, value: f64, data: web::Data<InteriorMutableState>){
+
+
+    println!("Distributing value: ({}, {}, {})", x, y, value);
+    println!("distribute_value called but not yet implemented!");
+    
+}

@@ -1,11 +1,9 @@
-using System;
-using System.Collections.Generic;
+
 using System.Globalization;
-using System.Linq;
 using System.Net.Sockets;
-using System.Security.Cryptography;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http.Features;
+using System.Text.Json;
+using System.Web;
+using Microsoft.Extensions.ObjectPool;
 
 namespace Node_cs
 {
@@ -254,6 +252,103 @@ namespace Node_cs
             return values;    
         }
     }
+
+
+
+        internal static async Task<List<XYValues>> DeleteSavedValuesBelow(string hash, ApiConfig api){
+            
+            List<Position> hashTasks = new List<Position>();
+
+            foreach (Tuple<int, int> key in api.savedValues.Keys){
+                hashTasks.Add(new Position { x = key.Item1, y = key.Item2 });
+            }
+            var result = await QueryHasherForPoints(hashTasks);
+
+            short hashVal;
+            try{
+                hashVal = short.Parse(hash);
+            }catch (Exception _){
+                throw new Exception("Invalid hash value: " + hash +" Exception: " + _.Message);
+            }
+            
+
+
+            foreach (HashedPosition pointHash in result)
+            {
+                if (pointHash.hash <= hashVal)
+                {
+                    api.savedValues.Remove(new Tuple<int, int>(pointHash.x, pointHash.y));
+                }
+            }
+            throw new NotImplementedException();
+        }
+
+
+        private static async Task<List<HashedPosition>> QueryHasherForPoints(List<Position> positions){
+            Console.WriteLine("Querying hasher service for points ... ");
+            var options = new JsonSerializerOptions
+            {
+                TypeInfoResolver = AppJsonSerializerContext.Default
+            };
+            using (HttpClient httpClient = new HttpClient()){
+                string baseUrl = "http://hasher_service:8080/hash_multiple";
+                Console.WriteLine("Making request to: " + baseUrl);
+                List<Position> queryPositions = new List<Position>();
+                for (int i = 0; i < 2500; i++)
+                {
+                    queryPositions.Add(new Position { x = i, y = i });
+                }
+                var json = JsonSerializer.Serialize(queryPositions, options);
+                var query = "?vec=" + json.Replace("[{","").Replace("}]","").Replace("},{",";").Replace("\"","");
+                string apiUrl = baseUrl + query;
+                Console.WriteLine("Making request to: " + apiUrl);
+                HttpResponseMessage response = await httpClient.SendAsync(new HttpRequestMessage(HttpMethod.Get, apiUrl));
+                string? responseBody = await response.Content.ReadAsStringAsync();
+                Console.WriteLine("Received response: " + responseBody);
+
+                var hashPosList = new List<HashedPosition>();
+                for (int i = 0; i < 12; i++)
+                {
+                    hashPosList.Add(new HashedPosition { x = i, y = i, hash = 1234 });
+                }
+                //deserialize into list of HashedPosition
+                List<HashedPosition> result = ParseHashedPositionsFromResponse(responseBody ?? ""); // Use the null-coalescing operator to provide a default value in case the response body is null
+                Console.WriteLine("Returning result: " + result);
+                return result ?? [];
+            };
+        }
+
+
+
+
+        internal static List<HashedPosition> ParseHashedPositionsFromResponse(String responseBody){
+        if (responseBody == null){
+            throw new Exception("Response body is null");
+        }
+        if (responseBody == "" || responseBody == "[]"){
+            return [];
+        }
+        List<HashedPosition> ret = [];
+        string[] objects = responseBody.Replace("[{","").Replace("}]","").Split("},{");
+        foreach (string obj in objects){
+            string[] parts = obj.Split(",");
+            var xInput = parts[0].Split(":");
+            var yInput = parts[1].Split(":");
+            var hashInput = parts[2].Split(":");
+            if (!xInput.Equals("\"x\"") || !yInput.Equals("\"y\"") || !hashInput.Equals("\"hash\"")){
+                throw new Exception("Invalid response from hasher service: " + responseBody);
+            }
+            int x = Int32.Parse(parts[0].Split(":")[1]);
+            int y = Int32.Parse(parts[1].Split(":")[1]);
+            ushort hash = UInt16.Parse(parts[2].Split(":")[1]);
+            ret.Add(new HashedPosition { x = x, y = y, hash = hash });
+        }
+        return ret;
+    }   
     }
 
+
+
+
 }
+

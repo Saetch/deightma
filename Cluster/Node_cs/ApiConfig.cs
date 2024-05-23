@@ -1,6 +1,7 @@
 
 using System.Net;
 using System.Net.Sockets;
+using System.Text.Json.Serialization;
 
 
 namespace Node_cs
@@ -120,6 +121,20 @@ namespace Node_cs
                 }
                 return Results.Ok(values);
             });
+            app.MapPost("/deleteSavedValuesBelow/{hash}", async (String hash) =>
+            {
+                try {
+                    Console.WriteLine("Received deleteSavedValuesBelow-call with params: " + hash );
+                    var retVal = await NodeBehavior.DeleteSavedValuesBelow(hash, this);
+                    return Results.Ok("TODO! Implement this!");
+                } catch (Exception e) {
+                    return Results.BadRequest(e.Message);
+                }
+            });
+            
+            
+            
+            
         }
 
         private void DealWithResponse(HttpResponseMessage response){
@@ -156,12 +171,36 @@ namespace Node_cs
         
     }
 
-    public class XYValues
+public class XYValues
 {
     public double x { get; set; }
     public double y { get; set; }
 
     public double value { get; set; }
+}
+public class HashedPosition{
+    public int x  { get; set; }
+    public int y { get; set; }
+    public ushort hash { get; set; }
+}
+
+public class Position{
+    public int x { get; set; }
+    public int y { get; set; }
+}
+
+[JsonSerializable(typeof(String))]
+[JsonSerializable(typeof(List<XYValues>))]
+[JsonSerializable(typeof(List<Position>))]
+[JsonSerializable(typeof(Position[]))]
+[JsonSerializable(typeof(Position))]
+[JsonSerializable(typeof(XYValues))]
+[JsonSerializable(typeof(XYValues[]))]
+[JsonSerializable(typeof(HashedPosition))]
+[JsonSerializable(typeof(List<HashedPosition>))]
+internal partial class AppJsonSerializerContext : JsonSerializerContext
+{
+
 }
 
 }

@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Clone)]
+#[allow(unused)]
 pub enum NodeRegisterResponse{
     WAIT,
     HANDLE{

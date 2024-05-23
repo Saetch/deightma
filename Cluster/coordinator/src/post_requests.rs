@@ -5,7 +5,7 @@ use actix_web::{web, HttpResponse, Responder};
 use awc::Client;
 use futures::join;
 
-use crate::{balancing::distribute_value, communication::NodeRegisterResponse, deal_with_nodes, state::{InteriorMutableState, NodeOccupation, NodeState}};
+use crate::{communication::NodeRegisterResponse, deal_with_nodes, state::{InteriorMutableState, NodeOccupation, NodeState}};
 
 const HASHER_SERVICE_URL : &str = "http://hasher_service:8080/hash/";
 
@@ -119,7 +119,7 @@ pub async fn upload_value(path: web::Path<(i32, i32, f64)>, data: web::Data<Inte
         to_distribute.push((x, y, value).into());
         HttpResponse::Ok().body("Value uploaded, waiting for node to be available")
     }else{
-        distribute_value(x, y, value, data).await;
+        deal_with_nodes::distribute_value(x, y, value, data).await;
         HttpResponse::Ok().body("Value uploaded and distributed")
     }
 

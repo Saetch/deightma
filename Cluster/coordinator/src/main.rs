@@ -2,7 +2,6 @@ use actix_web::{web, App, HttpResponse, HttpServer, Responder, middleware::Logge
 use env_logger::Env;
 use post_requests::{initialize, register, set_values_per_node};
 mod state;
-mod balancing;
 mod post_requests;
 mod get_requests;
 mod communication;
