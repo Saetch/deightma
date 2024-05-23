@@ -9,11 +9,9 @@ services:
         context: ./Master
         dockerfile: Dockerfile
       ports:
-        - "5000:5552"
+        - "5000:8080"
       networks:
         - distr-network
-      environment:
-        - "USE_DUMMY=false"
     bicubic_interpolation_service: 
       container_name: bicubic_interpolation_service
       image: ghcr.io/saetch/bicubic_interpolation_service:latest
@@ -37,8 +35,10 @@ services:
         - "ENVIRONMENT=Development"
       deploy:
         mode: replicated
-        replicas: 1              ## this is needed as of now. Do not change this or the values will be distributed unevenly
-      restart: always 
+        replicas: 1              ## this is needed as of now. Do not change this or the values will be distributed unevenly. The coordinator is yet to be made replicatable
+      restart: no 
+      depends_on:
+        - hasher_service
     nodecs:
       image: ghcr.io/saetch/deightma_nodecs:latest
       build:
@@ -53,6 +53,19 @@ services:
         replicas: 4        
       depends_on:
         - coordinator
+        - hasher_service
+    hasher_service:
+      image: ghcr.io/saetch/hasher_service:latest
+      ports:
+        - "5002:8080"       ## this is for debug purposes, the service does not need to be exposed to the host at all
+      build:
+        context: ./hasher_service
+        dockerfile: Dockerfile
+      networks:
+        - distr-network
+      deploy:
+        mode: replicated
+        replicas: 1
 networks:
   distr-network:
     driver: bridge

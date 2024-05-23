@@ -1,10 +1,8 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
+
 using System.Net;
 using System.Net.Sockets;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
+using System.Text.Json.Serialization;
+
 
 namespace Node_cs
 {
@@ -12,11 +10,12 @@ namespace Node_cs
     {
 
         public Dictionary<Tuple<int, int>, double> savedValues = new Dictionary<Tuple<int, int>, double>();
-        public Dictionary<Tuple<int, int>, String> exteriorValuesInNodes = new Dictionary<Tuple<int, int>, String>();
         public String BICUBIC_INTERPOLATION_SERVICE_URL = "http://bicubic_interpolation_service:8080/calculate";
         public String hostname = Environment.GetEnvironmentVariable("HOSTNAME");
         public String COORDINATOR_SERVICE_URL = "coordinator";
         public int PORT = 8080;
+
+        public ushort ownerHash = 0;
         public int initializeConfigValues()
         {
             Console.WriteLine("hostname is: "+ this.hostname);
@@ -52,7 +51,6 @@ namespace Node_cs
         public WebApplication setupServer(){
 
             var builder = WebApplication.CreateSlimBuilder();
-
             builder.Services.ConfigureHttpJsonOptions(options =>
             {
                 options.SerializerOptions.TypeInfoResolverChain.Insert(0, AppJsonSerializerContext.Default);
@@ -114,8 +112,35 @@ namespace Node_cs
                     return Results.BadRequest(e.Message);
                 }
             });
+            app.MapGet("/getAllSavedValues", () =>
+            {
+                //go through all keys in savedvalues
+                //return a list of all keys and values
+                List<XYValues> values = new List<XYValues>();
+                foreach (KeyValuePair<Tuple<int, int>, double> entry in savedValues)
+                {
+                    values.Add(new XYValues { x = entry.Key.Item1, y = entry.Key.Item2, value = entry.Value });
+                }
+                return Results.Ok(values);
+            });
+            app.MapPost("/deleteSavedValuesBelow/{hash}", async (String hash) =>
+            {
+                try {
+                    Console.WriteLine("Received deleteSavedValuesBelow-call with params: " + hash );
+                    var retVal = await NodeBehavior.DeleteSavedValuesBelow(hash, this);
+                    return Results.Ok(retVal);
+                } catch (Exception e) {
+                    return Results.BadRequest(e.Message);
+                }
+            });
+            
+            
+            
+            
         }
 
+
+        //This expects the response to be in exact format
         private void DealWithResponse(HttpResponseMessage response){
             String responseString = response.Content.ReadAsStringAsync().Result;
             Console.WriteLine("Received response from coordinator service: " + responseString);
@@ -127,7 +152,15 @@ namespace Node_cs
                 Console.WriteLine("Received invalid response from coordinator service: " + responseString);
                 throw new Exception("Received invalid response from coordinator service: " + responseString);
             }
-            //This is an example response: {"HANDLE":{"positions":[{"x":0,"y":0,"value":0.6816054984788531},{"x":1,"y":0,"value":0.6952797360508614},{"x":0,"y":1,"value":3.0950656335878035},{"x":1,"y":1,"value":2.0697533239357435}]}}
+            //This is an example response: {"HANDLE":{"hash_value":8782,"positions":[{"x":0,"y":0,"value":0.6816054984788531},{"x":1,"y":0,"value":0.6952797360508614},{"x":0,"y":1,"value":3.0950656335878035},{"x":1,"y":1,"value":2.0697533239357435}]}}
+            if (!responseString.Contains("x") || !responseString.Contains("y") || !responseString.Contains("value")){
+                Console.WriteLine("Received null response from coordinator service ... ");
+                return;
+            }
+            String hashVal = responseString.Split("\"hash_value\":")[1].Split(",")[0];
+            UInt16 hash = UInt16.Parse(hashVal);
+            this.ownerHash = hash;
+            Console.WriteLine("Set owner hashValue to: " + hash);
             String valuesPart = responseString.Split("[{")[1];
             String [] valuesStrings = valuesPart.Split("{");
             foreach (String valueString in valuesStrings){
@@ -146,12 +179,36 @@ namespace Node_cs
         
     }
 
-    public class XYValues
+public class XYValues
 {
     public double x { get; set; }
     public double y { get; set; }
 
     public double value { get; set; }
+}
+public class HashedPosition{
+    public int x  { get; set; }
+    public int y { get; set; }
+    public ushort hash { get; set; }
+}
+
+public class Position{
+    public int x { get; set; }
+    public int y { get; set; }
+}
+
+[JsonSerializable(typeof(String))]
+[JsonSerializable(typeof(List<XYValues>))]
+[JsonSerializable(typeof(List<Position>))]
+[JsonSerializable(typeof(Position[]))]
+[JsonSerializable(typeof(Position))]
+[JsonSerializable(typeof(XYValues))]
+[JsonSerializable(typeof(XYValues[]))]
+[JsonSerializable(typeof(HashedPosition))]
+[JsonSerializable(typeof(List<HashedPosition>))]
+internal partial class AppJsonSerializerContext : JsonSerializerContext
+{
+
 }
 
 }

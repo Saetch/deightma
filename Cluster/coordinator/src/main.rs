@@ -5,6 +5,7 @@ mod state;
 mod post_requests;
 mod get_requests;
 mod communication;
+mod deal_with_nodes;
 async fn manual_hello() -> impl Responder {
     HttpResponse::Ok().body("Hey there!")
 }
@@ -36,11 +37,13 @@ async fn main() -> std::io::Result<()> {
                 .route("/set_expected_values_per_node/{values}", web::put().to(set_values_per_node))
                 .route("/set_expected_values_per_node/{values}", web::get().to(set_values_per_node))
                 .route("/initialize", web::post().to(initialize))
-                .route("/initialize", web::get().to(initialize))
                 .route("/get_complete_state", web::get().to(get_requests::get_complete_state))
                 .route("/get_node/{x}/{y}", web::get().to(get_requests::get_node_for_point))
                 .route("/getNode/{x}/{y}", web::get().to(get_requests::get_node_for_point))
-                .route("/hey", web::get().to(manual_hello)),
+                .route("/upload_value/{x}/{y}/{value}", web::post().to(post_requests::upload_value))
+                .route("/hey", web::get().to(manual_hello))
+                .route("/debug_distribution", actix_web::web::get().to(get_requests::debug_distribution))
+
     )
             .route("/ping", web::get().to(ping))
     })

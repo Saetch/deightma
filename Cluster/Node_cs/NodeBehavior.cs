@@ -1,11 +1,9 @@
-using System;
-using System.Collections.Generic;
+
 using System.Globalization;
-using System.Linq;
 using System.Net.Sockets;
-using System.Security.Cryptography;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http.Features;
+using System.Text.Json;
+using System.Web;
+using Microsoft.Extensions.ObjectPool;
 
 namespace Node_cs
 {
@@ -139,7 +137,9 @@ namespace Node_cs
 
     public static String GetHoldingNode(int x, int y, ApiConfig config){
         Tuple<int, int> key = new Tuple<int, int>(x, y);
-        if (config.exteriorValuesInNodes.TryGetValue(key, out string? value)){
+        
+        //this was the old way of getting the node faster, but since the values are now redistributed automatically, this needs to be reworked        
+/*        if (config.exteriorValuesInNodes.TryGetValue(key, out string? value)){
             TcpClient tcpClient = new TcpClient();
             var result = tcpClient.BeginConnect(value, 5552, null, null);
             var success = result.AsyncWaitHandle.WaitOne(TimeSpan.FromMilliseconds(22));
@@ -155,7 +155,7 @@ namespace Node_cs
             }
         }  else {
             Console.WriteLine("No information about node found, requesting new information ... ");
-        }
+        } */
         
         TcpClient tcpClient2 = new TcpClient();
         var result2 = tcpClient2.BeginConnect(config.COORDINATOR_SERVICE_URL, config.PORT, null, null);
@@ -178,7 +178,6 @@ namespace Node_cs
         HttpClient client = new HttpClient();
         var response = client.GetAsync("http://" + config.COORDINATOR_SERVICE_URL + ":"+ config.PORT+"/organize/get_node/"+x+"/"+y).Result;
         var node = response.Content.ReadAsStringAsync().Result;
-        config.exteriorValuesInNodes[key] = node;
         return node;
         
     }
@@ -235,7 +234,7 @@ namespace Node_cs
                     string responseBody = await response.Content.ReadAsStringAsync();
                     Console.WriteLine("Received response: " + responseBody);
                     
-                    values[i + 1][j + 1] = responseBody == "null" ? null : Double.Parse(responseBody, CultureInfo.InvariantCulture);
+                    values[i + 1][j + 1] = responseBody.Equals("\"null\"") ? null : Double.Parse(responseBody, CultureInfo.InvariantCulture);
                 }
             }        
             for (int i = 0; i < 4; i++)
@@ -253,6 +252,119 @@ namespace Node_cs
             return values;    
         }
     }
+
+
+
+        internal static async Task<List<XYValues>> DeleteSavedValuesBelow(string hash, ApiConfig api){
+            
+            //Get all possible hashes for the given points
+            List<Position> hashTasks = new List<Position>();
+
+            foreach (Tuple<int, int> key in api.savedValues.Keys){
+                hashTasks.Add(new Position { x = key.Item1, y = key.Item2 });
+            }
+            var result = await QueryHasherForPoints(hashTasks);
+
+            short hashVal;
+            try
+            {
+                hashVal = short.Parse(hash);
+            }catch (Exception e){
+                throw new Exception("Invalid hash value: " + hash +" Exception: " + e.Message);
+            }
+            
+            var resultXYValues = new List<XYValues>();
+            //fin all values that are below the given hash value in the ringhash
+            foreach (HashedPosition pointHash in result)
+            {
+                //check wether or not the hash barrier wraps around
+                if (hashVal < api.ownerHash){
+                    if (pointHash.hash > hashVal && pointHash.hash < api.ownerHash ){     //value is above the hash value, no wrapping
+                        continue;  
+                    }
+                }else{
+                    if(pointHash.hash > hashVal || pointHash.hash < api.ownerHash){  //value is between hashvalue and owner hash, wrapping
+                        continue;
+                    }
+                }
+                Console.WriteLine("hashval: " + hashVal + " ownerHash: " + api.ownerHash + " pointHash: " + pointHash.hash);
+                var tuple = new Tuple<int, int>(pointHash.x, pointHash.y);
+                var ret = api.savedValues.ContainsKey(tuple);
+                if(!ret) throw new Exception("Tried removing nonexistent value");
+
+                double outp;
+                api.savedValues.TryGetValue(new Tuple<int, int>(pointHash.x, pointHash.y), out outp);
+                var removed = api.savedValues.Remove(new Tuple<int, int>(pointHash.x, pointHash.y));
+                if (!removed) throw new Exception("Failed to remove value");
+                resultXYValues.Add(new XYValues { x = pointHash.x, y = pointHash.y, value = outp });
+                
+            }
+
+            return resultXYValues;
+            
+        }
+
+
+        private static async Task<List<HashedPosition>> QueryHasherForPoints(List<Position> positions){
+            Console.WriteLine("Querying hasher service for points ... ");
+            var options = new JsonSerializerOptions
+            {
+                TypeInfoResolver = AppJsonSerializerContext.Default
+            };
+            using (HttpClient httpClient = new HttpClient()){
+                string baseUrl = "http://hasher_service:8080/hash_multiple";
+                Console.WriteLine("Making request to: " + baseUrl);
+                var json = JsonSerializer.Serialize(positions, options);
+                var query = "?vec=" + json.Replace("[{","").Replace("}]","").Replace("},{",";").Replace("\"","");
+                string apiUrl = baseUrl + query;
+                Console.WriteLine("Making request to: " + apiUrl);
+                HttpResponseMessage response = await httpClient.SendAsync(new HttpRequestMessage(HttpMethod.Get, apiUrl));
+                string? responseBody = await response.Content.ReadAsStringAsync();
+                Console.WriteLine("Received response: " + responseBody);
+
+                var hashPosList = new List<HashedPosition>();
+                for (int i = 0; i < 12; i++)
+                {
+                    hashPosList.Add(new HashedPosition { x = i, y = i, hash = 1234 });
+                }
+                //deserialize into list of HashedPosition
+                List<HashedPosition> result = ParseHashedPositionsFromResponse(responseBody ?? ""); // Use the null-coalescing operator to provide a default value in case the response body is null
+                Console.WriteLine("Returning result: " + result);
+                return result ?? [];
+            };
+        }
+
+
+
+
+        internal static List<HashedPosition> ParseHashedPositionsFromResponse(String responseBody){
+        if (responseBody == null){
+            throw new Exception("Response body is null");
+        }
+        if (responseBody == "" || responseBody == "[]"){
+            return [];
+        }
+        List<HashedPosition> ret = [];
+        string[] objects = responseBody.Replace("[{","").Replace("}]","").Split("},{");
+        foreach (string obj in objects){
+            string[] parts = obj.Split(",");
+            var xInputs = parts[0].Split(":");
+            var yInputs = parts[1].Split(":");
+            var hashInputs = parts[2].Split(":");
+            if (!xInputs[0].Equals("\"x\"") || !yInputs[0].Equals("\"y\"") || !hashInputs[0].Equals("\"hash\"")){
+                throw new Exception("Invalid response from hasher service: " + responseBody);
+            }
+            int x = Int32.Parse(xInputs[1]);
+            int y = Int32.Parse(yInputs[1]);
+            ushort hash = UInt16.Parse(hashInputs[1]);
+            ret.Add(new HashedPosition { x = x, y = y, hash = hash });
+        }
+        return ret;
+    }   
     }
 
+
+
+
 }
+

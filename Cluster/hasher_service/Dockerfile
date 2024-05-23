@@ -4,13 +4,12 @@ RUN apk add --no-cache musl-dev musl-utils linux-headers
 COPY ./src/ ./app/src/
 COPY ./Cargo.toml ./Cargo.lock /app/
 WORKDIR /app/
-ENV OPENSSL_DIR=/usr
-ENV PKG_CONFIG_PATH=/usr/lib/pkgconfig
+
 RUN cargo build --release
 
 
 FROM alpine:3.19.1
 
-COPY --from=BUILDER /app/target/release/coordinator /app/
+COPY --from=BUILDER /app/target/release/hasher_service /app/
 WORKDIR /app/
-CMD ["./coordinator"]
+CMD ["./hasher_service"]
