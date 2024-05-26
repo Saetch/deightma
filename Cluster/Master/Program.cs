@@ -46,6 +46,20 @@ public class Program{
             }
             
         });
+        app.MapGet("/getValue/{x}/{y}",  async (double x, double y) =>
+        {   
+            try {
+
+                var result = await getValue(""+x+"_"+y);
+                Console.WriteLine("Returning result: " + result);
+
+                return Results.Ok(result.Replace("\"", "'"));
+            
+            } catch (Exception e) {
+                return Results.BadRequest(e.Message);
+            }
+            
+        });
         app.Run();
 
         return 0;
