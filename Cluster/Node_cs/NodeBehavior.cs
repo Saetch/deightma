@@ -10,16 +10,174 @@ namespace Node_cs
     class NodeBehavior{
         
         public static async Task<double [][]> GetValuesForInterpolation(int zeroed_actual_x, int zeroed_actual_y, ApiConfig config){
+        var task1 = QueryAllNodesWithHashes(config);
+        double? [][] nullableMatrix;
+        var task2  = CheckMatrixValues(zeroed_actual_x, zeroed_actual_y, config);
+        await Task.WhenAll(task1, task2);
+        
+        
+        List<HashedPosition> toFindList = task2.Result.Item1;
+        nullableMatrix = task2.Result.Item2;
+        List<NodeResponse> nodeHashes = task1.Result;
 
-        Console.WriteLine("Filling in matrix values for "+zeroed_actual_x+"/"+ zeroed_actual_y+" ... ");
-        double? [][] nullableMatrix = await GetActualValuesFromNodes(zeroed_actual_x, zeroed_actual_y, config);
+
+        bool foundAllValues = await FillInQueriedValues(toFindList, nodeHashes, nullableMatrix, zeroed_actual_x -1 , zeroed_actual_y -1);
         return FillInNullValues(nullableMatrix);
         
         
     }
 
+    private static async Task<List<NodeResponse>> QueryAllNodesWithHashes(ApiConfig config){
+        Console.WriteLine("Querying hashes for all nodes ... ");
+        using (HttpClient httpClient = new HttpClient()){
+            string baseUrl = "http://"+config.COORDINATOR_SERVICE_URL+":"+config.PORT+"/organize/get_all_nodes";
+            Console.WriteLine("Making request to: " + baseUrl);
+            HttpResponseMessage response = await httpClient.SendAsync(new HttpRequestMessage(HttpMethod.Get, baseUrl));
+            string responseBody = await response.Content.ReadAsStringAsync();
+            Console.WriteLine("Received response for values from nodes: " + responseBody);
+            //deserialize responseBody to List<NodeResponse>
+            var ret = ParseNodeResponsesFromResponse(responseBody);
+
+            return ret;
+        }
+    }
+
+    //get the input parameters from the query parameters in ASP.NET
+    public static async Task<List<XYValues>> GetMultipleSavedValues(String query, ApiConfig config){
+        var retList = new List<XYValues>();
+        List<Position> positions = [];
+
+        string[] positionString = query.Split(";");
+        foreach (string pos in positionString){
+            if( pos == "" ){
+                continue;
+            }
+            string[] parts = pos.Split(",");
+            if (parts.Length != 2){
+                throw new Exception("Invalid query parameters: " + query);
+            }
+            int x = Int32.Parse(parts[0]);
+            int y = Int32.Parse(parts[1]);
+            positions.Add(new Position { x = x, y = y });
+        }
+
+        foreach (Position pos in positions){
+            Console.WriteLine("Try getting saved value for: " + pos.x + "/" + pos.y);
+            
+            if (config.savedValues.ContainsKey(new Tuple<int, int>(pos.x, pos.y))){
+                retList.Add(new XYValues { x = pos.x, y = pos.y, value = config.savedValues[new Tuple<int, int>(pos.x, pos.y)] });
+            }
+        }
+
+        return retList;
+    }
+
+    private static async Task<bool> FillInQueriedValues( List<HashedPosition>  toFindLisT, List<NodeResponse> hashValues, double? [][] values, int starting_x, int starting_y){
+        
+        List<List<int>> parrallelListForNodes = [];
+        for (int i = 0; i < hashValues.Count; i++)
+        {
+            parrallelListForNodes.Add([]);
+        }
+        int index = 0;
+        foreach (HashedPosition point in toFindLisT){
+            parrallelListForNodes[BinarySearchFittingNode(hashValues, point.hash)].Add(index);
+            index++;
+        }
+        List<Task> tasks = [];
+        for(int i = 0; i < hashValues.Count; i++){
+            if (parrallelListForNodes[i].Count == 0){
+                continue;
+            }
+            tasks.Add(FillInValuesForNode(parrallelListForNodes[i], toFindLisT, hashValues[i].name, values, starting_x, starting_y));
+        }
+
+
+        await Task.WhenAll(tasks);
+        bool successfullyConnected = true;
+        
+        
+
+
+        
+        return successfullyConnected;
+    }
+
+
+    private static async Task FillInValuesForNode(List<int> positionIndices, List<HashedPosition> positions, String node, double? [][] values, int starting_x, int starting_y){
+        Console.WriteLine("Filling in values for node: " + node);
+        using (HttpClient httpClient = new HttpClient()){
+            string apiUrl = "http://"+node+":5552/getMultipleSavedValues?parameters=";
+            foreach (int index in positionIndices){
+                apiUrl += positions[index].x + "," + positions[index].y + ";";
+            }
+            Console.WriteLine("Making request to: " + apiUrl);
+            HttpResponseMessage response = await httpClient.SendAsync(new HttpRequestMessage(HttpMethod.Get, apiUrl));
+            string responseBody = await response.Content.ReadAsStringAsync();
+            Console.WriteLine("Received response: " + responseBody);
+            //deserialize responseBody to List<XYValues>
+            List<SavedValue> responseValues = ParseSavedValuesFromResponse(responseBody);
+            foreach (SavedValue value in responseValues){
+                Console.WriteLine("Filling in value: " + value.value + " at position: " + value.Position.x + "/" + value.Position.y);
+                Position pos = value.Position;
+                if (values[pos.x-starting_x][pos.y-starting_y] != null){
+                    Console.WriteLine("Value already filled in, skipping ... Something must have gone wrong!!");
+                }
+                values[pos.x-starting_x][pos.y-starting_y] = value.value;
+
+            }
+        }
+    }
+
+    private static int BinarySearchFittingNode(List<NodeResponse> hashValues, int aimedValue){
+        int start = hashValues[0].hash;
+        int end = hashValues[^1].hash;
+        if(aimedValue < start || aimedValue > end){
+            return 0;
+        }
+        int len = hashValues.Count;
+        int index = len/2;
+        int upperBound = len -1;
+        int lowerBound = 0;
+        Console.WriteLine("Binary searching for NodeResponses: ");
+        foreach (NodeResponse node in hashValues){
+            Console.WriteLine(""+node.hash);
+        }
+        Console.WriteLine("Trying to find node for hashValue: "+aimedValue);
+        while (true){
+            int currentValue = hashValues[index].hash;
+            int nextValue = hashValues[index + 1].hash;
+            if (aimedValue > currentValue && aimedValue <= nextValue){
+                Console.WriteLine("Returning value from binary search: "+(index+1));
+                return index + 1;
+            }
+            if(aimedValue > currentValue){
+                lowerBound = index+1;
+                index += (upperBound - index)/2;
+            }else{
+                upperBound = index -1;
+                index -= Math.Max(1,(index - lowerBound)/2);
+            }
+        }
+
+    }
 
     public static double[][] FillInNullValues(double? [][] values){
+        bool allValues = true;
+        //having null values is relatively unlikely, so we should check wether this is needed at all
+        for (int i = 0; i < 4; i++)
+        {
+            for (int j = 0; j < 4; j++)
+            {
+                if (values[i][j] == null){
+                    Console.WriteLine("Null value found at: " + i + "/" + j);
+                    allValues = false;
+                    
+                }
+            }
+        }
+
+        if(!allValues){
         //check wether or not the direct neighbors to the corners are null
         bool[] corners = new bool[4];
         for (int i = 0; i < corners.Length; i++)
@@ -110,18 +268,23 @@ namespace Node_cs
         if (values[3][3] == null){
             values[3][3] = (values[3][2] + values[2][3]) / 2;
         }
+
+        Console.WriteLine("Filled in values: ");
+
+
+        }
+
         double[][] ret = new double[4][];
         for (int i = 0; i < 4; i++)
         {
             ret[i] = new double[4];
             for (int j = 0; j < 4; j++)
             {
-#pragma warning disable CS8629 // Nullable value type may be null.
-                    ret[i][j] = values[i][j].Value;
-#pragma warning restore CS8629 // Nullable value type may be null.
-                }
+                #pragma warning disable CS8629 // Nullable value type may be null.
+                ret[i][j] = values[i][j].Value;
+                #pragma warning restore CS8629 // Nullable value type may be null.
+            }
         }
-        Console.WriteLine("Filled in values: ");
         //print the values
         for (int i = 0; i < 4; i++)
         {
@@ -133,6 +296,58 @@ namespace Node_cs
         }
         return ret;
     }
+
+
+    private static List<NodeResponse> ParseNodeResponsesFromResponse(String responseBody){
+        if (responseBody == null){
+            throw new Exception("Response body is null");
+        }
+        if (responseBody == "" || responseBody == "[]"){
+            return [];
+        }
+        List<NodeResponse> ret = [];
+        string[] objects = responseBody.Replace("[{","").Replace("}]","").Split("},{");
+        foreach (string obj in objects){
+            string[] parts = obj.Split(",");
+            var nameInputs = parts[0].Split(":");
+            var hashInputs = parts[1].Split(":");
+            if (!nameInputs[0].Equals("\"name\"") || !hashInputs[0].Equals("\"hash\"")){
+                throw new Exception("Invalid response from coordinator service: " + responseBody);
+            }
+            String name = nameInputs[1].Replace("\"","");
+            ushort hash = UInt16.Parse(hashInputs[1]);
+            ret.Add(new NodeResponse { name = name, hash = hash });
+        }
+        return ret;
+    }
+
+    private static async  Task<Tuple<List<HashedPosition>, double? [][]>>CheckMatrixValues(int zeroed_actual_x, int zeroed_actual_y, ApiConfig config){
+        var values = new double?[4][];
+        for (int i = 0; i < 4; i++)
+        {
+            values[i] = new double?[4];
+        }
+        Console.WriteLine("Checking matrix values ... ");
+        List<Position> toFindList = [];
+        for (int i = -1; i < 3; i++)
+        {
+            for (int j = -1; j < 3; j++)
+            {
+                var tuple = new Tuple<int, int>(zeroed_actual_x + i, zeroed_actual_y + j);
+                if (config.savedValues.ContainsKey(tuple)){
+                    values[i + 1][j + 1] = config.savedValues[tuple];
+                }else{
+                    toFindList.Add(new Position { x = zeroed_actual_x + i, y = zeroed_actual_y + j });
+                }
+            }
+        }
+
+        var ret = await QueryHasherForPoints(toFindList);
+
+
+        return Tuple.Create(ret, values);
+    }
+
 
 
     public static String GetHoldingNode(int x, int y, ApiConfig config){
@@ -287,7 +502,6 @@ namespace Node_cs
                         continue;
                     }
                 }
-                Console.WriteLine("hashval: " + hashVal + " ownerHash: " + api.ownerHash + " pointHash: " + pointHash.hash);
                 var tuple = new Tuple<int, int>(pointHash.x, pointHash.y);
                 var ret = api.savedValues.ContainsKey(tuple);
                 if(!ret) throw new Exception("Tried removing nonexistent value");
@@ -321,12 +535,6 @@ namespace Node_cs
                 HttpResponseMessage response = await httpClient.SendAsync(new HttpRequestMessage(HttpMethod.Get, apiUrl));
                 string? responseBody = await response.Content.ReadAsStringAsync();
                 Console.WriteLine("Received response: " + responseBody);
-
-                var hashPosList = new List<HashedPosition>();
-                for (int i = 0; i < 12; i++)
-                {
-                    hashPosList.Add(new HashedPosition { x = i, y = i, hash = 1234 });
-                }
                 //deserialize into list of HashedPosition
                 List<HashedPosition> result = ParseHashedPositionsFromResponse(responseBody ?? ""); // Use the null-coalescing operator to provide a default value in case the response body is null
                 Console.WriteLine("Returning result: " + result);
@@ -334,7 +542,30 @@ namespace Node_cs
             };
         }
 
-
+        internal static List<SavedValue> ParseSavedValuesFromResponse(String responseBody){
+            if (responseBody == null){
+                throw new Exception("Response body is null");
+            }
+            if (responseBody == "" || responseBody == "[]"){
+                return [];
+            }
+            List<SavedValue> ret = [];
+            string[] objects = responseBody.Replace("[{","").Replace("}]","").Split("},{");
+            foreach (string obj in objects){
+                string[] parts = obj.Split(",");
+                var xInputs = parts[0].Split(":");
+                var yInputs = parts[1].Split(":");
+                var valueInputs = parts[2].Split(":");
+                if (!xInputs[0].Equals("\"x\"") || !yInputs[0].Equals("\"y\"") || !valueInputs[0].Equals("\"value\"")){
+                    throw new Exception("Invalid response from hasher service: " + responseBody);
+                }
+                int x = Int32.Parse(xInputs[1]);
+                int y = Int32.Parse(yInputs[1]);
+                double value = Double.Parse(valueInputs[1]);
+                ret.Add(new SavedValue { Position = new Position { x = x, y = y }, value = value });
+            }
+            return ret;
+        }
 
 
         internal static List<HashedPosition> ParseHashedPositionsFromResponse(String responseBody){

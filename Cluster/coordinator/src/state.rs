@@ -34,6 +34,12 @@ pub struct ImmutableState {
     pub expected_values_per_node: u32,
 }
 
+#[derive(Serialize)]
+pub struct NodeResponse {
+    pub name: NodeName,
+    pub hash: HashValue,
+}
+
 
 
 #[derive(Debug, Clone, Serialize)]
@@ -68,6 +74,15 @@ pub enum NodeOccupation {
     }
 }
 
+impl NodeResponse {
+    pub fn from_node_state(node_state: &NodeState) -> Self {
+        Self {
+            name: node_state.name.clone(),
+            hash: node_state.hash_value,
+        }
+    }
+}
+
 impl InteriorMutableState{
     pub fn new() -> Self {
         Self {
@@ -98,31 +113,13 @@ impl InteriorMutableState{
         let mut to_distribute = self.to_distribute.write().await;
         assert!(to_distribute.is_empty());
         let mut rand = rand::thread_rng();
-        const SIZE: usize = 16;
-        const WIDTH: usize = 4;
-        for i in 0 .. SIZE/4 {
+        const HEIGHT: usize = 10;
+        const WIDTH: usize = 10;
 
-            //this is just a dummy and these values are just pushed in this fashion in order to have them in order in the vector to distribute in squares to the nodes
-            to_distribute.push(DistributeableValue {
-                x: (i*2) as i32 % WIDTH as i32,
-                y: (i*2) as i32 / WIDTH as i32  * 2,
-                value: rand.gen_range(0.0 .. SIZE as f64 / WIDTH as f64),
-            });
-            to_distribute.push(DistributeableValue {
-                x: (i*2) as i32 % WIDTH as i32 + 1,
-                y: (i*2) as i32 / WIDTH as i32 * 2,
-                value: rand.gen_range(0.0 .. SIZE as f64 / WIDTH as f64),
-            });
-            to_distribute.push(DistributeableValue {
-                x: (i*2) as i32 % WIDTH as i32,
-                y: (i*2) as i32 / WIDTH as i32 * 2 + 1,
-                value: rand.gen_range(0.0 .. SIZE as f64 / WIDTH as f64),
-            });
-            to_distribute.push(DistributeableValue {
-                x: (i*2) as i32 % WIDTH as i32 +1,
-                y: (i*2) as i32 / WIDTH as i32 * 2 +1,
-                value: rand.gen_range(0.0 .. SIZE as f64 / WIDTH as f64),
-            });
+        for x in 0..WIDTH {
+            for y in 0..HEIGHT {
+                to_distribute.push(Position{x: x as i32, y: y as i32, value: rand.gen_range(0.0..(y +1 )as f64)});
+            }
         }
         true
     }

@@ -133,7 +133,15 @@ namespace Node_cs
                     return Results.BadRequest(e.Message);
                 }
             });
-            
+            app.MapGet("/getMultipleSavedValues", async (String parameters) => {
+                try {
+                    Console.WriteLine("Received getMultipleSavedValues-call with params: " + parameters );
+                    var retVal = await NodeBehavior.GetMultipleSavedValues(parameters, this);
+                    return Results.Ok(retVal);
+                } catch (Exception e) {
+                    return Results.BadRequest(e.Message);
+                }
+            });
             
             
             
@@ -179,6 +187,12 @@ namespace Node_cs
         
     }
 
+
+public class SavedValue{
+    public required Position Position { get; set; }
+    public double value { get; set; }
+}
+
 public class XYValues
 {
     public double x { get; set; }
@@ -197,6 +211,12 @@ public class Position{
     public int y { get; set; }
 }
 
+public class NodeResponse{
+    public required String name {get; set;}
+
+    public ushort hash {get; set;}
+}
+
 [JsonSerializable(typeof(String))]
 [JsonSerializable(typeof(List<XYValues>))]
 [JsonSerializable(typeof(List<Position>))]
@@ -206,6 +226,10 @@ public class Position{
 [JsonSerializable(typeof(XYValues[]))]
 [JsonSerializable(typeof(HashedPosition))]
 [JsonSerializable(typeof(List<HashedPosition>))]
+[JsonSerializable(typeof(Tuple<int, int>))]
+[JsonSerializable(typeof(List<Tuple<int, int>>))]
+[JsonSerializable(typeof(NodeResponse))]
+[JsonSerializable(typeof(List<NodeResponse>))]
 internal partial class AppJsonSerializerContext : JsonSerializerContext
 {
 

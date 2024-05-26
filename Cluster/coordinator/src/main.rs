@@ -43,6 +43,7 @@ async fn main() -> std::io::Result<()> {
                 .route("/upload_value/{x}/{y}/{value}", web::post().to(post_requests::upload_value))
                 .route("/hey", web::get().to(manual_hello))
                 .route("/debug_distribution", actix_web::web::get().to(get_requests::debug_distribution))
+                .route("/get_all_nodes", actix_web::web::get().to(get_requests::get_all_nodes))
 
     )
             .route("/ping", web::get().to(ping))
