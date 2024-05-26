@@ -54,7 +54,6 @@ namespace Node_cs
     public static double? GetSavedNodeValue(int x, int y, ApiConfig config){        
         Console.WriteLine("Received SavedValue-call with params: " + x + "/" + y);
         Tuple<int, int> key = new Tuple<int, int>(x, y);
-        DisplayState(config);
         if(config.savedValues.ContainsKey(key)){
             return config.savedValues[key];
         }
@@ -62,7 +61,6 @@ namespace Node_cs
     }
 
     private static void DisplayState(ApiConfig config){
-        Console.WriteLine("State: " + config.savedValues);
         Tuple<int, int>[] keys = config.savedValues.Keys.ToArray();
         for (int i = 0; i < keys.Length; i++)
         {

@@ -18,4 +18,5 @@ RUN dotnet publish "Node_cs.csproj" -c Release -o /app/publish /p:UseAppHost=fal
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
+RUN apk add curl
 ENTRYPOINT ["dotnet", "Node_cs.dll"]

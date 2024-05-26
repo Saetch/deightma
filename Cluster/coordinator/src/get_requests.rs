@@ -1,7 +1,9 @@
+use std::borrow::Borrow;
+
 use actix_web::{ web, HttpResponse, Responder};
 use futures::{future::join_all, join};
 
-use crate::{post_requests::HASHER_SERVICE_URL, state::{ImmutableState, InteriorMutableState}};
+use crate::{post_requests::HASHER_SERVICE_URL, state::{ImmutableState, InteriorMutableState, NodeResponse}};
 
 
 
@@ -10,6 +12,12 @@ pub async fn get_complete_state(data: web::Data<InteriorMutableState>) -> impl R
     println!("{:?}", state);
     let immutable_state = ImmutableState::from_interior(&state).await;
     HttpResponse::Ok().json(web::Json(immutable_state))
+}
+
+pub async fn get_all_nodes(data: web::Data<InteriorMutableState>) -> impl Responder {
+    let state = data.into_inner();
+    let known_nodes = state.known_nodes.read().await;
+    HttpResponse::Ok().json(web::Json(known_nodes.iter().map(|x| NodeResponse::from_node_state(x)).collect::<Vec<NodeResponse>>()))
 }
 
 pub async fn debug_distribution(data: web::Data<InteriorMutableState>) -> impl Responder {

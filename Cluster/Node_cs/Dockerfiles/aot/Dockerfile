@@ -15,7 +15,7 @@ RUN dotnet build -c Release -o /app/build
 RUN apt-get update && \
     apt-get install -y clang zlib1g-dev
 # Publish the application
-RUN dotnet publish -p:PublishAot=true -p:StripSymbols=true -c Debug -o /app/publish -r linux-musl-x64
+RUN dotnet publish -p:PublishAot=true -p:StripSymbols=true -c Release -o /app/publish -r linux-musl-x64
 
 # Switch to the runtime image
 FROM alpine:3.19 AS runtime
@@ -23,7 +23,7 @@ RUN apk add libc6-compat
 
 # Set the working directory inside the Docker image
 WORKDIR /app
-
+RUN apk add curl
 # Copy the published application
 COPY --from=build /app/publish/* .
 # Set the entry point for the container
