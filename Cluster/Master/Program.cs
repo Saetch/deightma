@@ -10,11 +10,8 @@ using System.Globalization;
 using System.Reflection.Metadata.Ecma335;
 using System.Text.Json;
 using Microsoft.AspNetCore.Authorization.Infrastructure;
+using System.Text;
 public class Program{
-
-    static int static_width_per_node = 2;
-    static int static_height_per_node = 2;
-
     static int Main(String[] args){
     
         
@@ -27,16 +24,18 @@ public class Program{
 
         //configure the builder to accept external connections to the server ("0.0.0.0")
         builder.WebHost.ConfigureKestrel(options => options.Listen(IPAddress.Any, 8080));
-
-
+        var serializerOptions = new JsonSerializerOptions
+        {
+            TypeInfoResolver = AppJsonSerializerContext.Default
+        };
         var app = builder.Build();
-
+        
         app.MapGet("/", () => Results.BadRequest("No value provided. Please provide a value in the format 'x_y'"));
         app.MapGet("/getValue/{values}",  async (string values) =>
         {   
             try {
 
-                var result = await getValue(values);
+                var result = await GetValue(values);
                 Console.WriteLine("Returning result: " + result);
 
                 return Results.Ok(result.Replace("\"", "'"));
@@ -50,7 +49,64 @@ public class Program{
         {   
             try {
 
-                var result = await getValue(""+x+"_"+y);
+                var result = await GetValue(""+x+"_"+y);
+                Console.WriteLine("Returning result: " + result);
+
+                return Results.Ok(result.Replace("\"", "'"));
+            
+            } catch (Exception e) {
+                return Results.BadRequest(e.Message);
+            }
+            
+        });
+        app.MapPost("/newValue/{x}/{y}/{value}",  async (int x, int y, double value) =>
+        {   
+            try {
+                XYValues addValue = new()
+                {
+                    x = x,
+                    y = y,
+                    value = value
+                };
+                var result = await AddValue(addValue);
+                Console.WriteLine("Returning result: " + result);
+
+                return Results.Ok(result.Replace("\"", "'"));
+            
+            } catch (Exception e) {
+                return Results.BadRequest(e.Message);
+            }
+            
+        });
+        app.MapPost("/addValue/{x}/{y}/{value}",  async (int x, int y, double value) =>
+        {   
+            try {
+                XYValues addValue = new()
+                {
+                    x = x,
+                    y = y,
+                    value = value
+                };
+                var result = await AddValue(addValue);
+                Console.WriteLine("Returning result: " + result);
+
+                return Results.Ok(result.Replace("\"", "'"));
+            
+            } catch (Exception e) {
+                return Results.BadRequest(e.Message);
+            }
+            
+        });
+        app.MapPost("/saveValue/{x}/{y}/{value}",  async (int x, int y, double value) =>
+        {   
+            try {
+                XYValues addValue = new()
+                {
+                    x = x,
+                    y = y,
+                    value = value
+                };
+                var result = await AddValue(addValue);
                 Console.WriteLine("Returning result: " + result);
 
                 return Results.Ok(result.Replace("\"", "'"));
@@ -65,9 +121,20 @@ public class Program{
         return 0;
     }
 
+    static async Task<String> AddValue(XYValues value){
+        using HttpClient httpClient = new HttpClient();
+        string json = JsonSerializer.Serialize(
+        value!, AppJsonSerializerContext.Default.XYValues);
+        var content = new StringContent(json, Encoding.UTF8, "application/json");
+        var response = await httpClient.PostAsync("http://coordinator:8080/organize/add_value", content);
+        response.EnsureSuccessStatusCode();
+        var responseBody = await response.Content.ReadAsStringAsync();
+        return responseBody;
+    }
 
 
-    static async Task<String> getValue(String input){
+
+    static async Task<String> GetValue(String input){
         var inputs = input.Split('_');
         if (inputs.Length != 2)
             throw new ArgumentException("Input must be in the format 'x_y'");
@@ -84,7 +151,6 @@ public class Program{
     }
 
 
-//TODO: Implement the function that finds the correct node in the network for dynamic node distribution. This is just for a completely static cluster
     static String find_correct_node(int x, int y){
         using (HttpClient httpClient = new HttpClient())
         {
@@ -157,7 +223,7 @@ class XYValues
 
 
 
-
+[JsonSourceGenerationOptions(WriteIndented = true)]
 [JsonSerializable(typeof(XYValues[]))]
 [JsonSerializable(typeof(XYValues))]
 [JsonSerializable(typeof(String))]
