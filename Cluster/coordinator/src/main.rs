@@ -40,10 +40,10 @@ async fn main() -> std::io::Result<()> {
                 .route("/get_complete_state", web::get().to(get_requests::get_complete_state))
                 .route("/get_node/{x}/{y}", web::get().to(get_requests::get_node_for_point))
                 .route("/getNode/{x}/{y}", web::get().to(get_requests::get_node_for_point))
-                .route("/upload_value/{x}/{y}/{value}", web::post().to(post_requests::upload_value))
                 .route("/hey", web::get().to(manual_hello))
                 .route("/debug_distribution", actix_web::web::get().to(get_requests::debug_distribution))
                 .route("/get_all_nodes", actix_web::web::get().to(get_requests::get_all_nodes))
+                .route("/add_value", actix_web::web::post().to(post_requests::upload_value))
 
     )
             .route("/ping", web::get().to(ping))

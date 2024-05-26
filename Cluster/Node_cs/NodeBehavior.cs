@@ -45,7 +45,7 @@ namespace Node_cs
     //get the input parameters from the query parameters in ASP.NET
     public static async Task<List<XYValues>> GetMultipleSavedValues(String query, ApiConfig config){
         var retList = new List<XYValues>();
-        List<Position> positions = [];
+        List<Point> positions = [];
 
         string[] positionString = query.Split(";");
         foreach (string pos in positionString){
@@ -58,10 +58,10 @@ namespace Node_cs
             }
             int x = Int32.Parse(parts[0]);
             int y = Int32.Parse(parts[1]);
-            positions.Add(new Position { x = x, y = y });
+            positions.Add(new Point { x = x, y = y });
         }
 
-        foreach (Position pos in positions){
+        foreach (Point pos in positions){
             Console.WriteLine("Try getting saved value for: " + pos.x + "/" + pos.y);
             
             if (config.savedValues.ContainsKey(new Tuple<int, int>(pos.x, pos.y))){
@@ -116,10 +116,10 @@ namespace Node_cs
             string responseBody = await response.Content.ReadAsStringAsync();
             Console.WriteLine("Received response: " + responseBody);
             //deserialize responseBody to List<XYValues>
-            List<SavedValue> responseValues = ParseSavedValuesFromResponse(responseBody);
-            foreach (SavedValue value in responseValues){
-                Console.WriteLine("Filling in value: " + value.value + " at position: " + value.Position.x + "/" + value.Position.y);
-                Position pos = value.Position;
+            List<Position> responseValues = ParseSavedValuesFromResponse(responseBody);
+            foreach (Position value in responseValues){
+                Console.WriteLine("Filling in value: " + value.value + " at position: " + value.x + "/" + value.y);
+                Point pos = new Point { x = value.x, y = value.y };
                 if (values[pos.x-starting_x][pos.y-starting_y] != null){
                     Console.WriteLine("Value already filled in, skipping ... Something must have gone wrong!!");
                 }
@@ -328,7 +328,7 @@ namespace Node_cs
             values[i] = new double?[4];
         }
         Console.WriteLine("Checking matrix values ... ");
-        List<Position> toFindList = [];
+        List<Point> toFindList = [];
         for (int i = -1; i < 3; i++)
         {
             for (int j = -1; j < 3; j++)
@@ -337,7 +337,7 @@ namespace Node_cs
                 if (config.savedValues.ContainsKey(tuple)){
                     values[i + 1][j + 1] = config.savedValues[tuple];
                 }else{
-                    toFindList.Add(new Position { x = zeroed_actual_x + i, y = zeroed_actual_y + j });
+                    toFindList.Add(new Point { x = zeroed_actual_x + i, y = zeroed_actual_y + j });
                 }
             }
         }
@@ -473,10 +473,10 @@ namespace Node_cs
         internal static async Task<List<XYValues>> DeleteSavedValuesBelow(string hash, ApiConfig api){
             
             //Get all possible hashes for the given points
-            List<Position> hashTasks = new List<Position>();
+            List<Point> hashTasks = new List<Point>();
 
             foreach (Tuple<int, int> key in api.savedValues.Keys){
-                hashTasks.Add(new Position { x = key.Item1, y = key.Item2 });
+                hashTasks.Add(new Point { x = key.Item1, y = key.Item2 });
             }
             var result = await QueryHasherForPoints(hashTasks);
 
@@ -519,7 +519,7 @@ namespace Node_cs
         }
 
 
-        private static async Task<List<HashedPosition>> QueryHasherForPoints(List<Position> positions){
+        private static async Task<List<HashedPosition>> QueryHasherForPoints(List<Point> positions){
             Console.WriteLine("Querying hasher service for points ... ");
             var options = new JsonSerializerOptions
             {
@@ -542,14 +542,14 @@ namespace Node_cs
             };
         }
 
-        internal static List<SavedValue> ParseSavedValuesFromResponse(String responseBody){
+        internal static List<Position> ParseSavedValuesFromResponse(String responseBody){
             if (responseBody == null){
                 throw new Exception("Response body is null");
             }
             if (responseBody == "" || responseBody == "[]"){
                 return [];
             }
-            List<SavedValue> ret = [];
+            List<Position> ret = [];
             string[] objects = responseBody.Replace("[{","").Replace("}]","").Split("},{");
             foreach (string obj in objects){
                 string[] parts = obj.Split(",");
@@ -562,7 +562,7 @@ namespace Node_cs
                 int x = Int32.Parse(xInputs[1]);
                 int y = Int32.Parse(yInputs[1]);
                 double value = Double.Parse(valueInputs[1]);
-                ret.Add(new SavedValue { Position = new Position { x = x, y = y }, value = value });
+                ret.Add(new Position { x = x, y = y, value = value });
             }
             return ret;
         }

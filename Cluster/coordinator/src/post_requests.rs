@@ -1,11 +1,11 @@
 
 use std::sync::Arc;
 
-use actix_web::{web, HttpResponse, Responder};
+use actix_web::{web::{self, Json}, HttpResponse, Responder};
 use awc::Client;
 use futures::join;
 
-use crate::{communication::NodeRegisterResponse, deal_with_nodes, state::{InteriorMutableState, NodeOccupation, NodeState}};
+use crate::{communication::{NodeRegisterResponse, Position}, deal_with_nodes::{self, distribute_value}, state::{InteriorMutableState, NodeOccupation, NodeState}};
 
 pub const HASHER_SERVICE_URL : &str = "http://hasher_service:8080/hash/";
 
@@ -112,15 +112,24 @@ pub async fn initialize(data: web::Data<InteriorMutableState>) -> impl Responder
     HttpResponse::Ok().body("Initialized")
 }
 
-pub async fn upload_value(path: web::Path<(i32, i32, f64)>, data: web::Data<InteriorMutableState>) -> impl Responder {
-    let (x, y, value) = path.into_inner();
-    if data.known_nodes.read().await.is_empty() {
-        let mut to_distribute = data.to_distribute.write().await;
-        to_distribute.push((x, y, value).into());
-        HttpResponse::Ok().body("Value uploaded, waiting for node to be available")
-    }else{
-        deal_with_nodes::distribute_value(x, y, value, data).await;
-        HttpResponse::Ok().body("Value uploaded and distributed")
+pub async fn upload_value(body: Json<Position>, data: web::Data<InteriorMutableState>) -> impl Responder {
+    let client = Client::default();
+
+    let body = body.into_inner();
+    let url = HASHER_SERVICE_URL.to_string() + &format!("{}/{}", body.x, body.y);
+
+    let hash_request_response = client.get(url).send().await.unwrap().body().await.unwrap();
+    let hash_value = String::from_utf8(hash_request_response.to_vec()).unwrap();
+    let lock = data.known_nodes.read().await;
+    let index_res = lock.binary_search_by(|x| x.hash_value.cmp(&hash_value.parse::<u16>().unwrap()));
+    let index;
+    match index_res {
+        Ok(i) => index = i,
+        Err(i) => index = if i == lock.len() {0} else {i},
     }
+    let node = &lock[index];
+    let url = format!("http://{}:5552/addValue", node.name);
+    let result = client.post(url).send_json(&body).await.unwrap().body().await.unwrap();
+    return HttpResponse::Ok().body(String::from_utf8(result.to_vec()).unwrap());
 
 }

@@ -20,9 +20,9 @@ pub enum NodeCommand{
 
 #[derive(Debug, Serialize, Clone, Copy, Deserialize)]
 pub struct Position{
-    pub(crate) x: i32,
-    pub(crate) y: i32,
-    pub(crate) value: f64,
+    pub x: i32,
+    pub y: i32,
+    pub value: f64,
 }
 
 

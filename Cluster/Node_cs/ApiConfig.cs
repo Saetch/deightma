@@ -45,7 +45,7 @@ namespace Node_cs
             HttpClient client = new HttpClient();
             var response = client.PostAsync("http://" + this.COORDINATOR_SERVICE_URL + ":"+ this.PORT+"/organize/register/"+this.hostname, null).Result;
             DealWithResponse(response);
-            return 0;  //TODO! Update this if the Node is configured correctly according to the response from the coordinator service
+            return 0;  
         }
 
         public WebApplication setupServer(){
@@ -142,7 +142,22 @@ namespace Node_cs
                     return Results.BadRequest(e.Message);
                 }
             });
-            
+            app.MapPost("/addValue/", (Position toAdd) =>
+            {
+                try {
+                    Console.WriteLine("Received addValue-call with params: " + toAdd.x + " " + toAdd.y + " " + toAdd.value);
+                    var key = new Tuple<int, int>(toAdd.x, toAdd.y);
+                    if (savedValues.ContainsKey(new Tuple<int, int>(toAdd.x, toAdd.y))){
+                        savedValues[key] = toAdd.value;
+                    }else{
+                        savedValues.Add(key, toAdd.value);
+                    }
+
+                    return Results.Ok("Value added: " + toAdd.x + " " + toAdd.y + " " + toAdd.value);
+                } catch (Exception e) {
+                    return Results.BadRequest(e.Message);
+                }
+            });
             
             
         }
@@ -182,14 +197,16 @@ namespace Node_cs
                 savedValues.Add(new Tuple<int, int>(x,y), value);
             }
         
-
+            Console.WriteLine("Finished computing the response from coordinator service ... ");
         }
         
     }
 
 
-public class SavedValue{
-    public required Position Position { get; set; }
+public class Position{
+    public int x { get; set; }
+    public int y { get; set; }
+
     public double value { get; set; }
 }
 
@@ -206,7 +223,7 @@ public class HashedPosition{
     public ushort hash { get; set; }
 }
 
-public class Position{
+public class Point{
     public int x { get; set; }
     public int y { get; set; }
 }
@@ -219,9 +236,9 @@ public class NodeResponse{
 
 [JsonSerializable(typeof(String))]
 [JsonSerializable(typeof(List<XYValues>))]
-[JsonSerializable(typeof(List<Position>))]
-[JsonSerializable(typeof(Position[]))]
-[JsonSerializable(typeof(Position))]
+[JsonSerializable(typeof(List<Point>))]
+[JsonSerializable(typeof(Point[]))]
+[JsonSerializable(typeof(Point))]
 [JsonSerializable(typeof(XYValues))]
 [JsonSerializable(typeof(XYValues[]))]
 [JsonSerializable(typeof(HashedPosition))]
@@ -230,6 +247,8 @@ public class NodeResponse{
 [JsonSerializable(typeof(List<Tuple<int, int>>))]
 [JsonSerializable(typeof(NodeResponse))]
 [JsonSerializable(typeof(List<NodeResponse>))]
+[JsonSerializable(typeof(Position))]
+[JsonSerializable(typeof(List<Position>))]
 internal partial class AppJsonSerializerContext : JsonSerializerContext
 {
 
