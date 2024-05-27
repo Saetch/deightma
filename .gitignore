@@ -22,4 +22,6 @@ Cluster/hasher_service/target
 Cluster/hasher_service/.vs
 Cluster/hasher_service/.vscode
 Cluster/hasher_service/.launch
+Cluster/web/target
+Cluster/web/dist
 token
