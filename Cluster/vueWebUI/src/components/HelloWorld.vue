@@ -40,6 +40,7 @@ export default {
       edges: [],
       svgWidth: 200,
       svgHeight: 200,
+      informationUrl : "http://localhost:5000"
     };
   },
   mounted() {
