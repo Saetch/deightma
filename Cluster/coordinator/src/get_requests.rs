@@ -1,4 +1,3 @@
-use std::borrow::Borrow;
 
 use actix_web::{ web, HttpResponse, Responder};
 use futures::{future::join_all, join};

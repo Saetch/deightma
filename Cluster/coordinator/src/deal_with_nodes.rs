@@ -8,7 +8,7 @@ use crate::{communication::{NodeRegisterResponse, Position}, state::{InteriorMut
 #[inline(always)]
 pub async fn redistribute_values(data: Arc<InteriorMutableState>, hash_value: u16) -> NodeRegisterResponse {
     println!("Redistributing values for node with hash value: {}", hash_value);
-    let mut positions_vec : Vec<Position> = Vec::new();
+    let positions_vec;
     let mut all_known_nodes = data.known_nodes.write().await;
     let index = all_known_nodes.binary_search_by(|x| x.hash_value.cmp(&hash_value));
     if let Ok(index) = index {

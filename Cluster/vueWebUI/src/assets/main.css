@@ -24,6 +24,7 @@ a,
   body {
     display: flex;
     place-items: center;
+    background-color: #242526;
   }
 
   #app {

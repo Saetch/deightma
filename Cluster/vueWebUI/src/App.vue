@@ -1,12 +1,12 @@
 <script setup>
-import HelloWorld from './components/HelloWorld.vue'
+import SVGMap from './components/SVGMap.vue'
 </script>
 
 <template>
   <body>
 
     <div class="wrapper">
-      <HelloWorld msg="You did it!" />
+      <SVGMap msg="You did it!" />
     </div>
   </body>
 
@@ -17,6 +17,7 @@ import HelloWorld from './components/HelloWorld.vue'
 header {
   line-height: 1.5;
 }
+
 
 
 @media (min-width: 1024px) {
