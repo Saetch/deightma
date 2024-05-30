@@ -1,15 +1,7 @@
 using System.Net;
-using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
-using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.ObjectPool;
-using Microsoft.Extensions.Options;
-using Microsoft.Extensions.DependencyInjection;
 using System.Globalization;
-using System.Reflection.Metadata.Ecma335;
 using System.Text.Json;
-using Microsoft.AspNetCore.Authorization.Infrastructure;
 using System.Text;
 public class Program{
     static int Main(String[] args){
@@ -21,7 +13,17 @@ public class Program{
         {
             options.SerializerOptions.TypeInfoResolverChain.Insert(0, AppJsonSerializerContext.Default);
         });
-
+       // Add CORS services to the container
+        builder.Services.AddCors(options =>
+        {
+            options.AddPolicy("AllowAnyOrigin",
+                builder =>
+                {
+                    builder.AllowAnyOrigin()
+                        .AllowAnyHeader()
+                        .AllowAnyMethod();
+                });
+        });
         //configure the builder to accept external connections to the server ("0.0.0.0")
         builder.WebHost.ConfigureKestrel(options => options.Listen(IPAddress.Any, 8080));
         var serializerOptions = new JsonSerializerOptions
@@ -29,7 +31,8 @@ public class Program{
             TypeInfoResolver = AppJsonSerializerContext.Default
         };
         var app = builder.Build();
-        
+        app.UseCors(builder => builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
+
         app.MapGet("/", () => Results.BadRequest("No value provided. Please provide a value in the format 'x_y'"));
         app.MapGet("/getValue/{values}",  async (string values) =>
         {   
@@ -116,7 +119,9 @@ public class Program{
             }
             
         });
+
         app.Run();
+        
 
         return 0;
     }

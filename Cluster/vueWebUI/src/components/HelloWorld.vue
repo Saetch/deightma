@@ -19,6 +19,7 @@
     </div>
     <div class="buttons">
       <button id="button1" class="button-27" role="button" @click="extendMap">Extend Map</button>
+      <button id="button2" class="button-27" role="button" @click="fetchInformation">Fetch Information</button>
     </div>
   </div>
 </template>
@@ -124,6 +125,11 @@ export default {
         edge.x2 += offset;
       });
       this.position.x -= offset;
+    },
+    async fetchInformation(){
+      const response = await fetch(this.informationUrl + "/getValue/2.3_2.5");
+      const data = await response.json();
+      console.log(data);
     }
   },
 };
