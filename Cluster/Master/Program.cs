@@ -3,6 +3,9 @@ using System.Text.Json.Serialization;
 using System.Globalization;
 using System.Text.Json;
 using System.Text;
+using Swashbuckle.AspNetCore.SwaggerGen;
+using Master;
+using Microsoft.Extensions.ObjectPool;
 public class Program{
     static int Main(String[] args){
     
@@ -119,6 +122,20 @@ public class Program{
             }
             
         });
+        app.MapGet("/getValueAutoInc/{x}/{y}/{minNodesToEachSide}",  async (double x, double y, int minNodesToEachSide) =>
+        {   
+            try {
+                
+                var result = await GetValueAutoInc(x, y, minNodesToEachSide);
+                Console.WriteLine("Returning result: " + result);
+
+                return Results.Ok(result);
+            
+            } catch (Exception e) {
+                return Results.BadRequest(e.Message);
+            }
+            
+        });
 
         app.Run();
         
@@ -135,6 +152,150 @@ public class Program{
         response.EnsureSuccessStatusCode();
         var responseBody = await response.Content.ReadAsStringAsync();
         return responseBody;
+    }
+
+    static async Task<XYValues?> GetValueAutoInc(double x, double y, int minNodesToEachSide){
+        using HttpClient httpClient = new HttpClient();
+        List<Tuple<int, int>> positions = new List<Tuple<int, int>>();
+        //Todo! Add more sophisticated method of generating relevant data points for the current position
+        for(int i = (int)Math.Floor(x) - minNodesToEachSide; i <= x + minNodesToEachSide; i++){
+            for(int j = (int)Math.Floor(y) -minNodesToEachSide; j <= y + minNodesToEachSide; j++){
+                positions.Add(new Tuple<int, int>(i, j));
+            }
+        }
+        Task<List<NodeResponse>> task2 = GetAllNodes(httpClient);
+        Task<List<Position>> task1 = GetPositions(positions, httpClient);
+        await Task.WhenAll(task1, task2);
+        List<NodeResponse> nodeNames = task2.Result;
+        List<Position> positionsWithHashes = task1.Result; 
+
+        List<WanderingPosition> wanderingPositions = await QueryNodesForPositions(nodeNames, positionsWithHashes, httpClient);
+        //run UpdateDistributedMapData(wanderingPositions, httpClient) in the background on a separate thread
+        var t = UpdateDistributedMapData(new List<WanderingPosition>(wanderingPositions), httpClient);
+
+
+        double x_double = x;
+        double y_double = y;
+        int x_int = (int)Math.Round(x_double);
+        int y_int = (int)Math.Round(y_double);
+
+        String node_name = find_correct_node(x_int, y_int);
+        await t;
+        Console.WriteLine("Response code from distributing map data: " + t.Result);
+        String result_value = await get_value_from_node(node_name, x, y , httpClient);
+        XYValues? result = JsonSerializer.Deserialize<XYValues>(result_value, AppJsonSerializerContext.Default.XYValues);
+        return result;
+    }
+
+
+    static async Task<List<WanderingPosition>> QueryNodesForPositions(List<NodeResponse> nodeNames, List<Position> positions, HttpClient httpClient){
+        Console.WriteLine("Querying nodes for positions called!");
+        List<WanderingPosition> wanderingPositions = new List<WanderingPosition>();
+        Dictionary<String, List<Position>> nodeToPositions = new Dictionary<String, List<Position>>();
+        foreach(Position position in positions){
+            int index = Helper.BinarySearch(nodeNames, position.hash);
+            if(nodeToPositions.ContainsKey(nodeNames[index].name)){
+                nodeToPositions[nodeNames[index].name].Add(position);
+            }else{
+            nodeToPositions.Add(nodeNames[index].name, new List<Position>());
+            nodeToPositions[nodeNames[index].name].Add(position);
+            }
+        }
+        List<Task<List<WanderingPosition>>> tasks = new List<Task<List<WanderingPosition>>>();
+        foreach((String nodeName, List<Position> toFindValues) in nodeToPositions){
+            tasks.Add(FindAbandonedValuesFromNode(nodeName, toFindValues, httpClient));
+        }
+        await Task.WhenAll(tasks);
+        for( int i = 0; i < tasks.Count; i++){
+            wanderingPositions.AddRange(tasks[i].Result);
+        }
+        Console.WriteLine("Querying nodes for positions done!");
+        return wanderingPositions;
+    }
+    static async Task<int> UpdateDistributedMapData(List<WanderingPosition> list ,HttpClient httpClient){
+        List<WanderingPosition> wanderingPositions = list;
+        Dictionary<String, List<WanderingPosition>> nodeToPositions = new Dictionary<String, List<WanderingPosition>>();
+        var options = new JsonSerializerOptions
+        {
+            TypeInfoResolver = AppJsonSerializerContext.Default
+        };
+        String url = "http://coordinator:8080/organize/update_distributed_map_data";
+        var body = new StringContent(JsonSerializer.Serialize(list, options), Encoding.UTF8, "application/json");
+        var response = await httpClient.PostAsync(url, body);
+        response.EnsureSuccessStatusCode();
+        Console.WriteLine("Updated distributed map data: "+ await response.Content.ReadAsStringAsync());
+        return ((int)response.StatusCode);
+    }
+
+
+    static async Task<List<WanderingPosition>> FindAbandonedValuesFromNode(String nodeName, List<Position> positions, HttpClient httpClient){
+        String url = "http://"+nodeName+":5552/hasValues?vec=";
+        foreach(Position position in positions){
+            url += (int)Math.Floor(position.x) + "," + (int)Math.Floor(position.y) + ";";
+        }
+        var response = await httpClient.GetAsync(url);
+        response.EnsureSuccessStatusCode();
+        var responseBody = await response.Content.ReadAsStringAsync();
+        var options = new JsonSerializerOptions
+        {
+            TypeInfoResolver = AppJsonSerializerContext.Default
+        };
+        List<WanderingPosition> ret = [];
+        List<XYValues>? results = JsonSerializer.Deserialize<List<XYValues>>(responseBody, options);
+        foreach(Position pos in positions){
+            if(!results!.Any(x => x.x == pos.x && x.y == pos.y)){
+                ret.Add(new WanderingPosition{
+                    x = (int)Math.Floor(pos.x),
+                    y = (int)Math.Floor(pos.y),
+                    hashValue = (ushort)pos.hash
+                });
+            }
+        }
+        return ret!;
+    }
+
+    static async Task<List<Position>> GetPositions(List<Tuple<int, int>> positions, HttpClient httpClient){
+        String url = "http://hasher_service:8080/hash_multiple?vec=";
+        foreach(Tuple<int, int> position in positions){
+            url += "x:"+position.Item1 + "," + "y:"+position.Item2 + ";";
+        }
+        url = url.TrimEnd(';');
+        var response = await httpClient.GetAsync(url);
+        response.EnsureSuccessStatusCode();
+        var responseBody = await response.Content.ReadAsStringAsync();
+        var options = new JsonSerializerOptions
+        {
+            TypeInfoResolver = AppJsonSerializerContext.Default
+        };
+        List<Position>? results = JsonSerializer.Deserialize<List<Position>>(responseBody, options);
+        return results!;
+    }
+    
+
+    
+    static async Task<ushort> GetHashedValue(double x, double y, HttpClient httpClient){
+        var response = await httpClient.GetAsync("http://coordinator:8080/organize/get_hashed_value/"+x+"/"+y);
+        response.EnsureSuccessStatusCode();
+        var responseBody = await response.Content.ReadAsStringAsync();
+        return ushort.Parse(responseBody);
+    }
+    
+    static async Task<List<NodeResponse>> GetAllNodes(HttpClient httpClient){
+        
+        var response = await httpClient.GetAsync("http://coordinator:8080/organize/get_all_nodes");
+        response.EnsureSuccessStatusCode();
+        var options = new JsonSerializerOptions
+        {
+            TypeInfoResolver = AppJsonSerializerContext.Default
+        };
+        var responseBody = await response.Content.ReadAsStringAsync();
+        if (responseBody.Equals("Unknown") || responseBody == null)
+        {
+            throw new Exception("Nodes not found. Application is not properly set up, configured or running.");
+        }
+        List<NodeResponse>? nodes = JsonSerializer.Deserialize<List<NodeResponse>>(responseBody, options);
+
+        return nodes!;
     }
 
 
@@ -211,6 +372,23 @@ public class Program{
             return responseBody;
         }
     }
+
+        static async Task<String> get_value_from_node(String name, double x, double y, HttpClient httpClient){
+            string apiUrl = $"http://"+name+":5552/getValue/"+x+"_"+y;
+            Console.WriteLine(apiUrl);            
+            // Make a GET request to the external API
+            HttpResponseMessage response = await httpClient.GetAsync(apiUrl);
+
+            // Ensure the response is successful
+            response.EnsureSuccessStatusCode();
+
+            // Read the response content as a string
+            string responseBody = await response.Content.ReadAsStringAsync();
+            Console.WriteLine("Received response: " + responseBody);
+
+            return responseBody;
+            
+        }
 }
 
 
@@ -225,13 +403,40 @@ class XYValues
     public double value { get; set; }
 }
 
+public class NodeResponse{
+    public required String name { get; set; }
+    public ushort hash { get; set; }
+
+}
+
+class WanderingPosition{
+    public int x { get; set; }
+    public int y { get; set; }
+    public ushort hashValue { get; set; }
+}
+
+class Position{
+    public double x { get; set; }
+    public double y { get; set; }
+    public int hash { get; set; }
+}
 
 
 
 [JsonSourceGenerationOptions(WriteIndented = true)]
 [JsonSerializable(typeof(XYValues[]))]
 [JsonSerializable(typeof(XYValues))]
+[JsonSerializable(typeof(List<XYValues>))]
 [JsonSerializable(typeof(String))]
+[JsonSerializable(typeof(List<String>))]
+[JsonSerializable(typeof(NodeResponse))]
+[JsonSerializable(typeof(ushort))]
+[JsonSerializable(typeof(List<NodeResponse>))]
+[JsonSerializable(typeof(Position))]
+[JsonSerializable(typeof(List<Position>))]
+[JsonSerializable(typeof(WanderingPosition))]
+[JsonSerializable(typeof(List<WanderingPosition>))]
+
 internal partial class AppJsonSerializerContext : JsonSerializerContext
 {
 

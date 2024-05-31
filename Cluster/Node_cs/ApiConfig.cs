@@ -158,8 +158,36 @@ namespace Node_cs
                     return Results.BadRequest(e.Message);
                 }
             });
+            app.MapGet("/hasValues", (String vec) =>
+            {
+                List<Tuple<int, int>> values = InterpretHasValues(vec);
+                Console.WriteLine("Received hasValues-call with params: " + vec);
+                List<XYValues> returnValues = new List<XYValues>();
+                foreach (Tuple<int, int> value in values){
+                    if (savedValues.ContainsKey(value)){
+                        returnValues.Add(new XYValues { x = value.Item1, y = value.Item2, value = savedValues[value] });
+                    }
+                }
+                return Results.Ok(returnValues);
+            });
             
             
+        }
+
+
+        private static List<Tuple<int, int>> InterpretHasValues(String vec){
+            List<Tuple<int, int>> values = new List<Tuple<int, int>>();
+            String [] parts = vec.Split(";");
+            foreach (String part in parts){
+                if (part.Length < 2){
+                    continue;
+                }
+                String [] xy = part.Split(",");
+                int x = Int32.Parse(xy[0]);
+                int y = Int32.Parse(xy[1]);
+                values.Add(new Tuple<int, int>(x, y));
+            }
+            return values;
         }
 
 

@@ -30,7 +30,7 @@ pub async fn debug_distribution(data: web::Data<InteriorMutableState>) -> impl R
         }
     }
     let result_vec = join_all(fut_vec).await;
-    for result in result_vec {
+    for _result in result_vec {
         println!("Found nodes for all 16 points!");
     }
     HttpResponse::Ok().body("Debugging distribution, see log")

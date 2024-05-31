@@ -44,6 +44,7 @@ async fn main() -> std::io::Result<()> {
                 .route("/debug_distribution", actix_web::web::get().to(get_requests::debug_distribution))
                 .route("/get_all_nodes", actix_web::web::get().to(get_requests::get_all_nodes))
                 .route("/add_value", actix_web::web::post().to(post_requests::upload_value))
+                .route("/update_distributed_map_data", actix_web::web::post().to(post_requests::generate_multiple_values))
 
     )
             .route("/ping", web::get().to(ping))
