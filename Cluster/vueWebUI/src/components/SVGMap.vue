@@ -1,4 +1,5 @@
 <template>
+  
   <div>
 
     <div
@@ -15,56 +16,94 @@
         <circle v-for="corner in corners" :key="corner[0]" :cx="corner[1].x" :cy="corner[1].y" r="7" fill="white" />
         <!-- Draw edges -->
         <line v-for="edge in edges" :key="edge[0]" :x1="edge[1].x1" :y1="edge[1].y1" :x2="edge[1].x2" :y2="edge[1].y2" stroke="white" />
+        <circle key="currentRequest" :cx="currentRequestPositionInView.x" :cy="currentRequestPositionInView.y" r="6" fill="green"/>
       </svg>
     </div>
     <div class="buttons">
       <button id="button1" class="button-27" role="button" @click="extendMap">Extend Map</button>
       <button id="button2" class="button-27" role="button" @click="fetchInformation">Fetch Information</button>
     </div>
+    <div class="sidebar-left">
+      <ResultDisplaySidebar :x="currentRequestPosition.x" :y="currentRequestPosition.y" :z="position.z"/>
+    </div>
   </div>
 </template>
 
 <script>
-
-
+import ResultDisplaySidebar from './ResultDisplaySidebar.vue';
 
 export default {
   name: 'SquareWithRoundedCorners',
+  components: {
+    ResultDisplaySidebar
+  },
   data() {
     return {
+      currentRequestPosition: {x: 0.5, y: 0.5},
+      zValue: 0.0,
       isDragging: false,
       position: { x: 0, y: 0 },
       dragStart: { x: 0, y: 0 },
-      testThingie : "test",
       scale: 1,
       corners: new Map(),
       edges: new Map(),
       svgWidth: 200,
       svgHeight: 200,
       informationUrl : "http://localhost:5000",
+      currentRequestPositionInView: {x: 100, y: 100},
       lowestX: 0,
       highestX: 1,
       highestY: 1,
       lowestY: 0,
-      points: [
-      { x: 50, y: 50 },
-      { x: 150, y: 150 },
-      { x: 250, y: 100 },
-      { x: 350, y: 200 },
-      { x: 450, y: 50 }
-    ],
+      dist_between_corners: 100
     };
   },
   mounted() {
+    window.addEventListener('keydown', (event) => {
+      this.handleKeyDown(event);
+    });
 
     console.log("Mounting!");
     this.position.x = window.innerWidth / 2 - this.svgWidth / 2;
     this.position.y = window.innerHeight / 2 - this.svgHeight / 2;
+
     this.calculateCornersAndEdges();
+    this.currentRequestPositionInView.x = this.corners.get("0/0").x + this.dist_between_corners * this.currentRequestPosition.x;
+    this.currentRequestPositionInView.y = this.corners.get("0/0").y - this.dist_between_corners * this.currentRequestPosition.y;
   },
   unmounted() {
   },
   methods: {
+    handleKeyDown(event) {
+      switch (event.key) {
+        case 'w':
+        case 'W':
+          this.currentRequestPosition.y += .05;
+          break;
+        case 'a':
+        case 'A':
+          this.currentRequestPosition.x -= .05;
+          break;
+        case 's':
+        case 'S':
+          this.currentRequestPosition.y -= .05;
+          break;
+        case 'd':
+        case 'D':
+          this.currentRequestPosition.x += .05;
+          break;
+        default:
+          break;
+      }
+      console.log("Current Position X: "+this.currentRequestPosition.x+" Y: "+this.currentRequestPosition.y);
+      this.UpdateRequestview();
+    },
+    UpdateRequestview(){
+      console.log(this.corners.get("0/0").x);
+      console.log(this.corners.get("0/0").y);
+      this.currentRequestPositionInView.x = this.corners.get("0/0").x + this.dist_between_corners * this.currentRequestPosition.x;
+      this.currentRequestPositionInView.y = this.corners.get("0/0").y - this.dist_between_corners * this.currentRequestPosition.y;
+    },
     startDrag(event) {
       this.isDragging = true;
       this.dragStart.x = event.clientX - this.position.x;
@@ -197,7 +236,8 @@ export default {
         edge.x1 += offset;
         edge.x2 += offset;
       });
-      this.position.x -= offset;
+      this.position.x += offset;
+      this.UpdateRequestview();
       this.svgWidth += offset;
     },
     increaseShiftDown(offset = 100){
@@ -209,6 +249,7 @@ export default {
         edge.y2 += offset;
       });
       this.position.y -= offset;
+      this.UpdateRequestview();
       this.svgHeight += offset;
     },
     addEdges(x, y){
