@@ -1,10 +1,10 @@
 <!-- src/components/Sidebar.vue -->
 <template>
     <div class="sidebar">
-        <a class="active">CurrentValues:</a>
-        <a class="x_val">X: {{x}} </a>
-        <a class="y_val">Y: {{y}} </a>
-        <a class="z_val">Z: {{z}} </a>
+        <p class="active">CurrentValues:</p>
+        <p class="x_val" >X: {{x_rounded}} </p>
+        <p class="y_val" >Y: {{y_rounded}} </p>
+        <p class="z_val" >Z: {{z_rounded}} </p>
       </div>
   </template>
   
@@ -15,7 +15,27 @@
         x: Number, 
         y: Number,
         z: Number,
+    },
+    data() {
+      return {
+            x_rounded: this.x,
+            y_rounded: this.y,
+            z_rounded: this.z,
+        }
+    },
+    watch: {
+        x: function (newVal) {
+            this.x_rounded = newVal.toFixed(3);
+        },
+        y: function (newVal) {
+            this.y_rounded = newVal.toFixed(3);
+        },
+        z: function (newVal) {
+            this.z_rounded = newVal.toFixed(3);
+        }
     }
+
+    
   }
   </script>
   
@@ -37,7 +57,7 @@ div.sidebar  {
   }
   
   /* Sidebar links */
-  .sidebar a {
+  .sidebar p {
     display: block;
     color: black;
     padding: 16px;
@@ -45,13 +65,13 @@ div.sidebar  {
   }
   
   /* Active/current link */
-  .sidebar a.active {
+  .sidebar p.active {
     background-color: #04AA6D;
     color: white;
   }
   
   /* Links on mouse-over */
-  .sidebar a:hover:not(.active) {
+  .sidebar p:hover:not(.active) {
     background-color: #555;
     color: white;
   }
@@ -70,13 +90,13 @@ div.sidebar  {
       height: auto;
       position: relative;
     }
-    .sidebar a {float: left;}
+    .sidebar p {float: left;}
     div.content {margin-left: 0;}
   }
   
   /* On screens that are less than 400px, display the bar vertically, instead of horizontally */
   @media screen and (max-width: 400px) {
-    .sidebar a {
+    .sidebar p {
       text-align: center;
       float: none;
     }

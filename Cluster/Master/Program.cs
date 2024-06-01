@@ -122,6 +122,43 @@ public class Program{
             }
             
         });
+        app.MapGet("/getAllNodes",  async () =>
+        {   
+            try {
+                var result = await GetAllNodes(new HttpClient());
+                Console.WriteLine("Returning result: " + result);
+
+                return Results.Ok(result);
+            
+            } catch (Exception e) {
+                return Results.BadRequest(e.Message);
+            }
+            
+        });
+        app.MapGet("/getAllSavedValues",  async () =>
+        {   
+            Console.WriteLine("getAllSavedValues called!");
+            try {
+                HttpClient httpClient = new HttpClient();
+                var result = await GetAllNodes(httpClient);
+                List<XYValues> allValues = new List<XYValues>();
+                List<Task<List<XYValues>>> tasks = new List<Task<List<XYValues>>>();
+                foreach(NodeResponse node in result){
+                    tasks.Add(GetAllValuesFromNode(node, httpClient));
+                }
+                await Task.WhenAll(tasks);
+                foreach(Task<List<XYValues>> task in tasks){
+                    allValues.AddRange(task.Result);
+                }
+                Console.WriteLine("Returning result with length: " + allValues.Count);
+
+                return Results.Ok(allValues);
+            
+            } catch (Exception e) {
+                return Results.BadRequest(e.Message);
+            }
+            
+        });
         app.MapGet("/getValueAutoInc/{x}/{y}/{minNodesToEachSide}",  async (double x, double y, int minNodesToEachSide) =>
         {   
             try {
@@ -187,7 +224,17 @@ public class Program{
         return result;
     }
 
-
+    static async Task<List<XYValues>> GetAllValuesFromNode(NodeResponse node, HttpClient httpClient){
+        var response = await httpClient.GetAsync("http://"+node.name+":5552/getAllSavedValues");
+        response.EnsureSuccessStatusCode();
+        var responseBody = await response.Content.ReadAsStringAsync();
+        var options = new JsonSerializerOptions
+        {
+            TypeInfoResolver = AppJsonSerializerContext.Default
+        };
+        List<XYValues>? values = JsonSerializer.Deserialize<List<XYValues>>(responseBody, options);
+        return values!;
+    }
     static async Task<List<WanderingPosition>> QueryNodesForPositions(List<NodeResponse> nodeNames, List<Position> positions, HttpClient httpClient){
         Console.WriteLine("Querying nodes for positions called!");
         List<WanderingPosition> wanderingPositions = new List<WanderingPosition>();

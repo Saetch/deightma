@@ -20,8 +20,7 @@
       </svg>
     </div>
     <div class="buttons">
-      <button id="button1" class="button-27" role="button" @click="extendMap">Extend Map</button>
-      <button id="button2" class="button-27" role="button" @click="fetchInformation">Fetch Information</button>
+      <button id="button2" class="button-27" role="button" @click="fetchInformation" style="visibility:hidden">Fetch Information</button>
     </div>
     <div class="sidebar-left">
       <ResultDisplaySidebar :x="currentRequestPosition.x" :y="currentRequestPosition.y" :z="position.z"/>
@@ -55,10 +54,11 @@ export default {
       highestX: 1,
       highestY: 1,
       lowestY: 0,
+      currentPosCeil: {x: 1, y: 1},
       dist_between_corners: 100
     };
   },
-  mounted() {
+  async mounted() {
     window.addEventListener('keydown', (event) => {
       this.handleKeyDown(event);
     });
@@ -67,7 +67,7 @@ export default {
     this.position.x = window.innerWidth / 2 - this.svgWidth / 2;
     this.position.y = window.innerHeight / 2 - this.svgHeight / 2;
 
-    this.calculateCornersAndEdges();
+    await this.calculateCornersAndEdges();
     this.currentRequestPositionInView.x = this.corners.get("0/0").x + this.dist_between_corners * this.currentRequestPosition.x;
     this.currentRequestPositionInView.y = this.corners.get("0/0").y - this.dist_between_corners * this.currentRequestPosition.y;
   },
@@ -75,6 +75,7 @@ export default {
   },
   methods: {
     handleKeyDown(event) {
+      var toContinue = true;
       switch (event.key) {
         case 'w':
         case 'W':
@@ -93,16 +94,34 @@ export default {
           this.currentRequestPosition.x += .05;
           break;
         default:
+          toContinue = false;
           break;
       }
-      console.log("Current Position X: "+this.currentRequestPosition.x+" Y: "+this.currentRequestPosition.y);
-      this.UpdateRequestview();
+      if (toContinue) {
+        console.log("Current Position X: "+this.currentRequestPosition.x+" Y: "+this.currentRequestPosition.y);
+        this.UpdateRequestview();
+      }
     },
-    UpdateRequestview(){
-      console.log(this.corners.get("0/0").x);
-      console.log(this.corners.get("0/0").y);
+    async UpdateRequestview(){
+      const xCeil = Math.ceil(this.currentRequestPosition.x);
+      const yCeil = Math.ceil(this.currentRequestPosition.y);
+      if (xCeil != this.currentPosCeil.x || yCeil != this.currentPosCeil.y) {
+        this.currentPosCeil.x = xCeil;
+        this.currentPosCeil.y = yCeil;
+        console.log("Passed a border!");
+        await this.requestNewCeilData();
+      } else {
+        await this.requestNewData();
+      }
+      
       this.currentRequestPositionInView.x = this.corners.get("0/0").x + this.dist_between_corners * this.currentRequestPosition.x;
       this.currentRequestPositionInView.y = this.corners.get("0/0").y - this.dist_between_corners * this.currentRequestPosition.y;
+    },
+    requestNewData(){
+      console.log("Requesting new data!");    
+    },
+    requestNewCeilData(){
+      console.log("Requesting new ceil data!");
     },
     startDrag(event) {
       this.isDragging = true;
@@ -137,7 +156,17 @@ export default {
         document.body.style.cursor = 'pointer';
       }
     },
-    calculateCornersAndEdges() {
+     async calculateCornersAndEdges() {
+      const response = await fetch(this.informationUrl+"/getAllSavedValues");
+
+      // Check if the response is OK (status code 200-299)
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+        // Parse the JSON response
+      const data = await response.json();
+      console.log(data);   
       // Calculate corners based on position and offset
       const offset = 50; // Offset from each edge
       this.corners.set('0/1',{ x: 0 + offset, y: 0 + offset , repr_x: 0 , repr_y: 1});
@@ -152,24 +181,6 @@ export default {
       this.edges.set('0/0-1/0',{ x1: this.corners.get('0/0').x, y1: this.corners.get('0/0').y, x2: this.corners.get('1/0').x, y2: this.corners.get('1/0').y });
       this.edges.set('0/0-0/1',{ x1: this.corners.get('0/0').x, y1: this.corners.get('0/0').y, x2: this.corners.get('0/1').x, y2: this.corners.get('0/1').y });
 
-    },
-    extendMap(){
-      
-        //random x 
-      let x = 0;
-      let y = 0;
-
-      while (this.corners.has(x+'/'+y)){
-        y++;
-      }
-
-      
-      const dist_between_corners = 100; // Offset from each edge
-      this.increaseSizeIfNecessary(dist_between_corners, x , y);
-      let to_add = this.addCorner(x, y);
-      if(to_add){
-        this.addEdges(x, y);
-      }
     },
     addCorner(x, y){
       const offset = 100;
@@ -271,11 +282,7 @@ export default {
         this.edges.set(x+'/'+y+'-'+x+'/'+(y-1),{ x1: current_corner.x, y1: current_corner.y, x2: neighbor_corner.x, y2: neighbor_corner.y });
       }
     },
-    async fetchInformation(){
-      const response = await fetch(this.informationUrl + "/getValue/2.3_2.5");
-      const data = await response.json();
-      console.log(data);
-    }
+
   },
 };
 </script>
