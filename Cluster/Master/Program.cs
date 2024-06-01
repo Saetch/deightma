@@ -44,7 +44,7 @@ public class Program{
                 var result = await GetValue(values);
                 Console.WriteLine("Returning result: " + result);
 
-                return Results.Ok(result.Replace("\"", "'"));
+                return Results.Ok(result);
             
             } catch (Exception e) {
                 return Results.BadRequest(e.Message);
@@ -58,7 +58,7 @@ public class Program{
                 var result = await GetValue(""+x+"_"+y);
                 Console.WriteLine("Returning result: " + result);
 
-                return Results.Ok(result.Replace("\"", "'"));
+                return Results.Ok(result);
             
             } catch (Exception e) {
                 return Results.BadRequest(e.Message);
@@ -347,7 +347,7 @@ public class Program{
 
 
 
-    static async Task<String> GetValue(String input){
+    static async Task<XYValues> GetValue(String input){
         var inputs = input.Split('_');
         if (inputs.Length != 2)
             throw new ArgumentException("Input must be in the format 'x_y'");
@@ -360,7 +360,8 @@ public class Program{
 
         String node_name = find_correct_node(x_int, y_int);
         String result_value = await get_value_from_node(node_name, input);
-        return result_value;
+        XYValues? result = JsonSerializer.Deserialize<XYValues>(result_value, AppJsonSerializerContext.Default.XYValues);
+        return result!;
     }
 
 

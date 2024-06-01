@@ -23,7 +23,7 @@
       <button id="button2" class="button-27" role="button" @click="fetchInformation" style="visibility:hidden">Fetch Information</button>
     </div>
     <div class="sidebar-left">
-      <ResultDisplaySidebar :x="currentRequestPosition.x" :y="currentRequestPosition.y" :z="position.z"/>
+      <ResultDisplaySidebar :x="currentRequestPosition.x" :y="currentRequestPosition.y" :z="zValue"/>
     </div>
   </div>
 </template>
@@ -38,7 +38,7 @@ export default {
   },
   data() {
     return {
-      currentRequestPosition: {x: 0.5, y: 0.5},
+      currentRequestPosition: {x: 4.5, y: 4.5},
       zValue: 0.0,
       isDragging: false,
       position: { x: 0, y: 0 },
@@ -50,11 +50,8 @@ export default {
       svgHeight: 200,
       informationUrl : "http://localhost:5000",
       currentRequestPositionInView: {x: 100, y: 100},
-      lowestX: 0,
-      highestX: 1,
-      highestY: 1,
-      lowestY: 0,
       currentPosCeil: {x: 1, y: 1},
+      mapBorders: {x1: 0, x2: 1, y1: 0, y2: 1},
       dist_between_corners: 100
     };
   },
@@ -64,12 +61,14 @@ export default {
     });
 
     console.log("Mounting!");
-    this.position.x = window.innerWidth / 2 - this.svgWidth / 2;
-    this.position.y = window.innerHeight / 2 - this.svgHeight / 2;
+
 
     await this.calculateCornersAndEdges();
     this.currentRequestPositionInView.x = this.corners.get("0/0").x + this.dist_between_corners * this.currentRequestPosition.x;
     this.currentRequestPositionInView.y = this.corners.get("0/0").y - this.dist_between_corners * this.currentRequestPosition.y;
+    this.position.x = window.innerWidth / 2 - this.svgWidth / 2;
+    this.position.y = window.innerHeight / 2 - this.svgHeight / 2;
+    this.requestNewData();
   },
   unmounted() {
   },
@@ -102,25 +101,33 @@ export default {
         this.UpdateRequestview();
       }
     },
-    async UpdateRequestview(){
+    async UpdateRequestview(newData = true){
       const xCeil = Math.ceil(this.currentRequestPosition.x);
       const yCeil = Math.ceil(this.currentRequestPosition.y);
       if (xCeil != this.currentPosCeil.x || yCeil != this.currentPosCeil.y) {
         this.currentPosCeil.x = xCeil;
         this.currentPosCeil.y = yCeil;
         console.log("Passed a border!");
-        await this.requestNewCeilData();
+        if(newData){
+          await this.requestNewData();
+        }
       } else {
-        await this.requestNewData();
+        if(newData){
+          await this.requestNewData();
+        }
       }
       
       this.currentRequestPositionInView.x = this.corners.get("0/0").x + this.dist_between_corners * this.currentRequestPosition.x;
       this.currentRequestPositionInView.y = this.corners.get("0/0").y - this.dist_between_corners * this.currentRequestPosition.y;
     },
-    requestNewData(){
-      console.log("Requesting new data!");    
+    async requestNewData(){
+      console.log("Requesting new data!");   
+      const response = await fetch(this.informationUrl + "/getValue/" + this.currentRequestPosition.x + "/" + this.currentRequestPosition.y);
+      const data = await response.json();
+      console.log(data.value);  // This should now correctly log the value
+      this.zValue = data.value;  // Assign the value to zValue
     },
-    requestNewCeilData(){
+    async requestNewCeilData(){
       console.log("Requesting new ceil data!");
     },
     startDrag(event) {
@@ -166,9 +173,17 @@ export default {
 
         // Parse the JSON response
       const data = await response.json();
+      data.forEach(element => {
+        console.log("Adding corner: "+element.x+" "+element.y);
+        this.addCorner(element.x, element.y);
+        this.addEdges(element.x, element.y);
+        
+        
+      });
       console.log(data);   
       // Calculate corners based on position and offset
-      const offset = 50; // Offset from each edge
+      /*const offset = 50; // Offset from each edge
+      
       this.corners.set('0/1',{ x: 0 + offset, y: 0 + offset , repr_x: 0 , repr_y: 1});
       this.corners.set('1/1',{ x: 0 + 200 - offset, y: 0 + offset, repr_x: 1 , repr_y: 1});
       this.corners.set('0/0',{ x: 0+ offset, y: 0 + 200 - offset, repr_x: 0 , repr_y: 0});
@@ -180,9 +195,10 @@ export default {
       this.edges.set('1/0-1/1',{ x1: this.corners.get('1/0').x, y1: this.corners.get('1/0').y, x2: this.corners.get('1/1').x, y2: this.corners.get('1/1').y });
       this.edges.set('0/0-1/0',{ x1: this.corners.get('0/0').x, y1: this.corners.get('0/0').y, x2: this.corners.get('1/0').x, y2: this.corners.get('1/0').y });
       this.edges.set('0/0-0/1',{ x1: this.corners.get('0/0').x, y1: this.corners.get('0/0').y, x2: this.corners.get('0/1').x, y2: this.corners.get('0/1').y });
-
+      */
     },
     addCorner(x, y){
+      this.increaseSizeIfNecessary(x, y);
       const offset = 100;
       //find correct value for x and y
       let x_val = 0;
@@ -216,26 +232,30 @@ export default {
         neighboring_corner = true;
       }
       if(!neighboring_corner){
-        console.log("No neighboring corner found!");
-        return false;
+        this.addDanglingCorner(x, y);
+      }else{
+        this.corners.set(x+'/'+y ,{ x: x_val  , y: y_val , repr_x: x , repr_y: y});
       }
-      this.corners.set(x+'/'+y ,{ x: x_val  , y: y_val , repr_x: x , repr_y: y});
       return true;
     },
-    increaseSizeIfNecessary(offset = 100, x, y){
-      if(x<this.lowestX){
-        this.lowestX = x;
-        this.increaseShiftRight(offset);
-      }else if (x > this.highestX){
-        this.highestX = x;
-        this.svgWidth += offset;
+    increaseSizeIfNecessary( x, y, offset = 100){
+      if(x<this.mapBorders.x1){
+        for ( let i = 0; i < this.mapBorders.x1 - x; i++){
+          this.increaseShiftRight(offset);
+        }
+        this.mapBorders.x1 = x;
+      }else if (x > this.mapBorders.x2){
+        this.svgWidth += offset * (x - this.mapBorders.x2);
+        this.mapBorders.x2 = x;
       }
-      if(y>this.highestY){
-        this.highestY = y;
-        this.increaseShiftDown(offset);
-      }else if (y < this.lowestY){
-        this.lowestY = y;
-        this.svgHeight += offset;
+      if(y>this.mapBorders.y2){
+        for ( let i = 0; i < y - this.mapBorders.y2; i++){
+          this.increaseShiftDown(offset);
+        }
+        this.mapBorders.y2 = y;
+      }else if (y < this.mapBorders.y1){
+        this.svgHeight += offset * (this.mapBorders.y1 - y);
+        this.mapBorders.y1 = y;
       }
 
     },
@@ -248,7 +268,7 @@ export default {
         edge.x2 += offset;
       });
       this.position.x += offset;
-      this.UpdateRequestview();
+      this.UpdateRequestview(false);
       this.svgWidth += offset;
     },
     increaseShiftDown(offset = 100){
@@ -260,7 +280,7 @@ export default {
         edge.y2 += offset;
       });
       this.position.y -= offset;
-      this.UpdateRequestview();
+      this.UpdateRequestview(false);
       this.svgHeight += offset;
     },
     addEdges(x, y){
@@ -282,6 +302,15 @@ export default {
         this.edges.set(x+'/'+y+'-'+x+'/'+(y-1),{ x1: current_corner.x, y1: current_corner.y, x2: neighbor_corner.x, y2: neighbor_corner.y });
       }
     },
+    addDanglingCorner(x,y){
+      const startingOffset = 50;
+      const offsetBetweenCorners = 100;
+      const firstX = this.mapBorders.x1;
+      const firstY = this.mapBorders.y2;
+      const indexX = x - firstX;
+      const indexY = firstY - y;
+      this.corners.set(x+'/'+y ,{ x: startingOffset + offsetBetweenCorners * indexX  , y: startingOffset + offsetBetweenCorners * indexY , repr_x: x , repr_y: y});
+    }
 
   },
 };
