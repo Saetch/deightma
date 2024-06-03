@@ -1,10 +1,21 @@
 <!-- src/components/Sidebar.vue -->
 <template>
-    <div class="sidebar">
+    <div class="sidebar" >
         <p class="active">CurrentValues:</p>
         <p class="x_val" >X: {{x_rounded}} </p>
         <p class="y_val" >Y: {{y_rounded}} </p>
         <p class="z_val" >Z: {{z_rounded}} </p>
+        <svg width="100%" height="50%" viewBox="0 0 100 100">
+          <line  key="bar" x1="50%" y1="0%" x2="50%" y2="100%" stroke="black" stroke-width="2%" />
+          <line key="barTop" x1="30%" y1="0%" x2="70%" y2="0%" stroke="black" stroke-width="2%" />
+          <line key="barBottom" x1="30%" y1="100%" x2="70%" y2="100%" stroke="black" stroke-width="2%" />
+          <line key="barMiddle" x1="40%" y1="50%" x2="60%" y2="50%" stroke="black" stroke-width="1%" />
+          <polygon :points="arrowHeadPoints" style="fill:lime;stroke:black;stroke-width:2" />
+        </svg>
+        <div>
+          <div class="display">StepSize: <span id="stepSizeDisplay">{{stepSize}}</span></div>
+          <input type="range" id="stepSizeSlider" class="slider" min="0.001" max="1.0" step="0.001" :value="stepSize" @input="updateStepSize">
+       </div>
       </div>
   </template>
   
@@ -21,6 +32,9 @@
             x_rounded: this.x,
             y_rounded: this.y,
             z_rounded: this.z,
+            arrowY: 0,
+            arrowHeadPoints: "50,50 75,60 75,40",
+            stepSize: 0.05
         }
     },
     watch: {
@@ -32,8 +46,18 @@
         },
         z: function (newVal) {
             this.z_rounded = newVal.toFixed(3);
+            const hundredPercent = 10.0;
+            this.arrowY = (( 100.0 * newVal ) / hundredPercent )* (0.5 );
+            this.arrowHeadPoints = `51,${50 - this.arrowY} 75,${60 - this.arrowY} 75,${40 - this.arrowY}`;
         }
-    }
+    },
+    methods: {
+        updateStepSize(event) {
+            const newStepSize = event.target.value;
+            this.stepSize = Number(newStepSize);
+            this.$emit('update-stepSize', this.stepSize);
+        }
+    },
 
     
   }
@@ -55,6 +79,11 @@ div.sidebar  {
     height: 100%;
     overflow: auto;
   }
+  .display {
+    padding: 10px;
+    text-align: center;
+    color: black;
+  }
   
   /* Sidebar links */
   .sidebar p {
@@ -64,6 +93,11 @@ div.sidebar  {
     text-decoration: none;
   }
   
+  #stepSizeSlider {
+    width: 80%;
+    position: relative;
+    left: 10%!important;
+  }
   /* Active/current link */
   .sidebar p.active {
     background-color: #04AA6D;

@@ -520,6 +520,9 @@ namespace Node_cs
 
 
         private static async Task<List<HashedPosition>> QueryHasherForPoints(List<Point> positions){
+            if (positions.Count == 0){
+                return [];
+            }
             Console.WriteLine("Querying hasher service for points ... ");
             var options = new JsonSerializerOptions
             {

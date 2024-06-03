@@ -191,7 +191,7 @@ public class Program{
         return responseBody;
     }
 
-    static async Task<XYValues?> GetValueAutoInc(double x, double y, int minNodesToEachSide){
+    static async Task<AutoIncResponse> GetValueAutoInc(double x, double y, int minNodesToEachSide){
         using HttpClient httpClient = new HttpClient();
         List<Tuple<int, int>> positions = new List<Tuple<int, int>>();
         //Todo! Add more sophisticated method of generating relevant data points for the current position
@@ -208,7 +208,7 @@ public class Program{
 
         List<WanderingPosition> wanderingPositions = await QueryNodesForPositions(nodeNames, positionsWithHashes, httpClient);
         //run UpdateDistributedMapData(wanderingPositions, httpClient) in the background on a separate thread
-        var t = UpdateDistributedMapData(new List<WanderingPosition>(wanderingPositions), httpClient);
+        var t = UpdateDistributedMapData(wanderingPositions, httpClient);
 
 
         double x_double = x;
@@ -221,7 +221,18 @@ public class Program{
         Console.WriteLine("Response code from distributing map data: " + t.Result);
         String result_value = await get_value_from_node(node_name, x, y , httpClient);
         XYValues? result = JsonSerializer.Deserialize<XYValues>(result_value, AppJsonSerializerContext.Default.XYValues);
-        return result;
+        List<RawPos> addedCorners = new List<RawPos>();
+        foreach(WanderingPosition pos in wanderingPositions){
+            addedCorners.Add(new RawPos{
+                x = pos.x,
+                y = pos.y
+            });
+        }
+        AutoIncResponse response = new AutoIncResponse{
+            value = result!,
+            addedCorners = addedCorners
+        };
+        return response;
     }
 
     static async Task<List<XYValues>> GetAllValuesFromNode(NodeResponse node, HttpClient httpClient){
@@ -469,7 +480,16 @@ class Position{
     public int hash { get; set; }
 }
 
+class RawPos{
+    public int x { get; set; }
+    public int y { get; set; }
+}
 
+class AutoIncResponse{
+    public XYValues value { get; set; }
+    public List<RawPos> addedCorners { get; set; }
+
+}
 
 [JsonSourceGenerationOptions(WriteIndented = true)]
 [JsonSerializable(typeof(XYValues[]))]
@@ -484,6 +504,9 @@ class Position{
 [JsonSerializable(typeof(List<Position>))]
 [JsonSerializable(typeof(WanderingPosition))]
 [JsonSerializable(typeof(List<WanderingPosition>))]
+[JsonSerializable(typeof(RawPos))]
+[JsonSerializable(typeof(List<RawPos>))]
+[JsonSerializable(typeof(AutoIncResponse))]
 
 internal partial class AppJsonSerializerContext : JsonSerializerContext
 {

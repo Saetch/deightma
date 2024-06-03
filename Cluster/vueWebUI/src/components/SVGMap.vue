@@ -4,7 +4,7 @@
 
     <div
       class="container"
-      :style="{ top: position.y + 'px', left: position.x + 'px', transform: 'scale(' + scale + ')' }"
+      :style="{ top: position.y + 'px', left: position.x+ 'px', transform: 'scale(' + scale + ')'}"
       @mousedown="startDrag"
       @wheel="onWheel">
       <svg :width=svgWidth :height=svgHeight
@@ -19,11 +19,9 @@
         <circle key="currentRequest" :cx="currentRequestPositionInView.x" :cy="currentRequestPositionInView.y" r="6" fill="green"/>
       </svg>
     </div>
-    <div class="buttons">
-      <button id="button2" class="button-27" role="button" @click="fetchInformation" style="visibility:hidden">Fetch Information</button>
-    </div>
+
     <div class="sidebar-left">
-      <ResultDisplaySidebar :x="currentRequestPosition.x" :y="currentRequestPosition.y" :z="zValue"/>
+      <ResultDisplaySidebar :x="currentRequestPosition.x" :y="currentRequestPosition.y" :z="zValue" @update-stepSize="handleUpdateStepSize"/>
     </div>
   </div>
 </template>
@@ -44,6 +42,7 @@ export default {
       position: { x: 0, y: 0 },
       dragStart: { x: 0, y: 0 },
       scale: 1,
+      stepSize: 0.005,
       corners: new Map(),
       edges: new Map(),
       svgWidth: 200,
@@ -52,14 +51,19 @@ export default {
       currentRequestPositionInView: {x: 100, y: 100},
       currentPosCeil: {x: 1, y: 1},
       mapBorders: {x1: 0, x2: 1, y1: 0, y2: 1},
-      dist_between_corners: 100
+      dist_between_corners: 100,
+      translateX: 0,
+      translateY: 0,
+      directions: {up: false, down: false, left: false, right: false}
     };
   },
   async mounted() {
-    window.addEventListener('keydown', (event) => {
+    window.addEventListener('keypress', (event) => {
       this.handleKeyDown(event);
     });
-
+    window.addEventListener('keyup', (event) => {
+      this.handleKeyUp(event);
+    });
     console.log("Mounting!");
 
 
@@ -69,36 +73,77 @@ export default {
     this.position.x = window.innerWidth / 2 - this.svgWidth / 2;
     this.position.y = window.innerHeight / 2 - this.svgHeight / 2;
     this.requestNewData();
+    setInterval(this.MoveRequest, 30);
   },
   unmounted() {
   },
   methods: {
+    handleUpdateStepSize(newStepSize) {
+      this.stepSize = newStepSize;
+    },
     handleKeyDown(event) {
-      var toContinue = true;
       switch (event.key) {
         case 'w':
         case 'W':
-          this.currentRequestPosition.y += .05;
+          this.directions.up = true;
           break;
         case 'a':
         case 'A':
-          this.currentRequestPosition.x -= .05;
+          this.directions.left = true;
           break;
         case 's':
         case 'S':
-          this.currentRequestPosition.y -= .05;
+          this.directions.down = true;
           break;
         case 'd':
         case 'D':
-          this.currentRequestPosition.x += .05;
+          this.directions.right += true;
           break;
         default:
-          toContinue = false;
           break;
       }
-      if (toContinue) {
-        console.log("Current Position X: "+this.currentRequestPosition.x+" Y: "+this.currentRequestPosition.y);
-        this.UpdateRequestview();
+    },
+    handleKeyUp(event) {
+      switch (event.key) {
+        case 'w':
+        case 'W':
+          this.directions.up = false;
+          break;
+        case 'a':
+        case 'A':
+          this.directions.left = false;
+          break;
+        case 's':
+        case 'S':
+          this.directions.down = false;
+          break;
+        case 'd':
+        case 'D':
+          this.directions.right = false;
+          break;
+        default:
+          break;
+      }
+    },
+    async MoveRequest(){
+      let xChange = 0;
+      let yChange = 0;
+      if(this.directions.up){
+        yChange += this.stepSize;
+      }
+      if(this.directions.down){
+        yChange -= this.stepSize;
+      }
+      if(this.directions.left){
+        xChange -= this.stepSize;
+      }
+      if(this.directions.right){
+        xChange += this.stepSize;
+      }
+      this.currentRequestPosition.x += xChange;
+      this.currentRequestPosition.y += yChange;
+      if ( xChange != 0 || yChange != 0){
+        await this.UpdateRequestview();
       }
     },
     async UpdateRequestview(newData = true){
@@ -109,7 +154,7 @@ export default {
         this.currentPosCeil.y = yCeil;
         console.log("Passed a border!");
         if(newData){
-          await this.requestNewData();
+          await this.requestNewCeilData();
         }
       } else {
         if(newData){
@@ -121,14 +166,14 @@ export default {
       this.currentRequestPositionInView.y = this.corners.get("0/0").y - this.dist_between_corners * this.currentRequestPosition.y;
     },
     async requestNewData(){
-      console.log("Requesting new data!");   
       const response = await fetch(this.informationUrl + "/getValue/" + this.currentRequestPosition.x + "/" + this.currentRequestPosition.y);
       const data = await response.json();
-      console.log(data.value);  // This should now correctly log the value
-      this.zValue = data.value;  // Assign the value to zValue
+      this.zValue = data.value;  
     },
     async requestNewCeilData(){
-      console.log("Requesting new ceil data!");
+      const response = await fetch(this.informationUrl + "/getValueAutoInc/" + this.currentRequestPosition.x + "/" + this.currentRequestPosition.y+"/3");
+      const data = await response.json();
+      console.log(data);
     },
     startDrag(event) {
       this.isDragging = true;
@@ -141,7 +186,6 @@ export default {
       if (this.isDragging) {
         this.position.x = event.clientX - this.dragStart.x;
         this.position.y = event.clientY - this.dragStart.y;
-        console.log("X: "+this.position.x+" Y: "+this.position.y);
       }
     },
     stopDrag() {
@@ -150,14 +194,33 @@ export default {
       document.removeEventListener('mouseup', this.stopDrag);
     },
     onWheel(event) {
-      const zoomFactor = 0.1;
-      if (event.deltaY < 0) {
-        this.scale += zoomFactor;
-      } else {
-        this.scale -= zoomFactor;
-        if (this.scale < 0.1) this.scale = 0.1;
-      }
-    },
+    const zoomFactor = 0.1;
+    const minScale = 0.1;
+    
+    let newScale = this.scale;
+    if (event.deltaY < 0) {
+      newScale += zoomFactor;
+    } else {
+      newScale -= zoomFactor;
+      if (newScale < minScale) newScale = minScale;
+    }
+    console.log(newScale);
+
+    console.log("Event position: "+event.clientX+" "+event.clientY);
+
+    let xDistFromCenter = (event.clientX - (this.position.x) - this.svgWidth / 2.0);
+    let yDistFromCenter = (event.clientY - (this.position.y) - this.svgHeight / 2.0);
+    console.log("Distance from center: "+xDistFromCenter+" "+yDistFromCenter);
+    let newXDistFromCenter = xDistFromCenter * (newScale / this.scale);
+    let newYDistFromCenter = yDistFromCenter * (newScale / this.scale);
+    console.log("Distance from center: "+newXDistFromCenter+" "+newYDistFromCenter);
+
+
+    this.scale = newScale;
+    this.position.x -= newXDistFromCenter - xDistFromCenter;
+    this.position.y -= newYDistFromCenter - yDistFromCenter;
+    
+  },
     onMouseOver() {
       if (!this.isDragging) {
         document.body.style.cursor = 'pointer';
@@ -174,28 +237,11 @@ export default {
         // Parse the JSON response
       const data = await response.json();
       data.forEach(element => {
-        console.log("Adding corner: "+element.x+" "+element.y);
         this.addCorner(element.x, element.y);
         this.addEdges(element.x, element.y);
         
         
       });
-      console.log(data);   
-      // Calculate corners based on position and offset
-      /*const offset = 50; // Offset from each edge
-      
-      this.corners.set('0/1',{ x: 0 + offset, y: 0 + offset , repr_x: 0 , repr_y: 1});
-      this.corners.set('1/1',{ x: 0 + 200 - offset, y: 0 + offset, repr_x: 1 , repr_y: 1});
-      this.corners.set('0/0',{ x: 0+ offset, y: 0 + 200 - offset, repr_x: 0 , repr_y: 0});
-      this.corners.set('1/0',{ x: 0 + 200 - offset, y: 0 + 200 - offset, repr_x: 1 , repr_y: 0});
-
-
-      // Calculate edges based on corners
-      this.edges.set('0/1-1/1',{ x1: this.corners.get('0/1').x, y1: this.corners.get('0/1').y, x2: this.corners.get('1/1').x, y2: this.corners.get('1/1').y });
-      this.edges.set('1/0-1/1',{ x1: this.corners.get('1/0').x, y1: this.corners.get('1/0').y, x2: this.corners.get('1/1').x, y2: this.corners.get('1/1').y });
-      this.edges.set('0/0-1/0',{ x1: this.corners.get('0/0').x, y1: this.corners.get('0/0').y, x2: this.corners.get('1/0').x, y2: this.corners.get('1/0').y });
-      this.edges.set('0/0-0/1',{ x1: this.corners.get('0/0').x, y1: this.corners.get('0/0').y, x2: this.corners.get('0/1').x, y2: this.corners.get('0/1').y });
-      */
     },
     addCorner(x, y){
       this.increaseSizeIfNecessary(x, y);
@@ -322,67 +368,14 @@ export default {
   z-index: 0;
   position: absolute;
   cursor: grab;
-  transition: transform 0.1s;
+  transition: scale 0.1s;
   display: flex;
   justify-content: center;
   align-items: center;
 
 }
 
-  .buttons{
-    position: absolute;
-    top: 0;
-    left: 0;
-    background-color: #1A1A1A;
-    display: flex;
-
-    justify-content: center;}
-  /* CSS */
-  .button-27 {
-    z-index: 1;
-    width: 10px;
-    padding: auto;
-    appearance: none;
-    background-color: #000000;
-    border: 2px solid #1A1A1A;
-    border-radius: 15px;
-    box-sizing: border-box;
-    color: #FFFFFF;
-    cursor: pointer;
-    display: inline-block;
-    font-family: Roobert,-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol";
-    font-size: 16px;
-    font-weight: 600;
-    line-height: normal;
-    margin: 0;
-    min-height: 60px;
-    min-width: 0;
-    outline: none;
-    padding: 16px 24px;
-    text-align: center;
-    text-decoration: none;
-    transition: all 300ms cubic-bezier(.23, 1, 0.32, 1);
-    user-select: none;
-    -webkit-user-select: none;
-    touch-action: manipulation;
-    width: 100%;
-    will-change: transform;
-  }
   
-  .button-27:disabled {
-    pointer-events: none;
-  }
-  
-  .button-27:hover {
-    box-shadow: rgba(0, 0, 0, 0.25) 0 8px 15px;
-    transform: translateY(-2px);
-  }
-  
-  .button-27:active {
-    box-shadow: none;
-    transform: translateY(0);
-  }
-
 
 .container:active {
   cursor: grabbing;
