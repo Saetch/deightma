@@ -140,9 +140,6 @@ namespace Node_cs
         int upperBound = len -1;
         int lowerBound = 0;
         Console.WriteLine("Binary searching for NodeResponses: ");
-        foreach (NodeResponse node in hashValues){
-            Console.WriteLine(""+node.hash);
-        }
         Console.WriteLine("Trying to find node for hashValue: "+aimedValue);
         while (true){
             int currentValue = hashValues[index].hash;
@@ -352,25 +349,6 @@ namespace Node_cs
 
     public static String GetHoldingNode(int x, int y, ApiConfig config){
         Tuple<int, int> key = new Tuple<int, int>(x, y);
-        
-        //this was the old way of getting the node faster, but since the values are now redistributed automatically, this needs to be reworked        
-/*        if (config.exteriorValuesInNodes.TryGetValue(key, out string? value)){
-            TcpClient tcpClient = new TcpClient();
-            var result = tcpClient.BeginConnect(value, 5552, null, null);
-            var success = result.AsyncWaitHandle.WaitOne(TimeSpan.FromMilliseconds(22));
-            if (success)
-            {
-                tcpClient.EndConnect(result);
-                tcpClient.Close();
-                return value;
-            }
-            else{
-                Console.WriteLine("Failed to connect to known node, requesting new information ... ");
-                tcpClient.Close();
-            }
-        }  else {
-            Console.WriteLine("No information about node found, requesting new information ... ");
-        } */
         
         TcpClient tcpClient2 = new TcpClient();
         var result2 = tcpClient2.BeginConnect(config.COORDINATOR_SERVICE_URL, config.PORT, null, null);

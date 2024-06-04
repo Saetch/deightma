@@ -23,7 +23,6 @@ RUN apk add libc6-compat
 
 # Set the working directory inside the Docker image
 WORKDIR /app
-RUN apk add curl
 # Copy the published application
 COPY --from=build /app/publish/* .
 # Set the entry point for the container
