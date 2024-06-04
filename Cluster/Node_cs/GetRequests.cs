@@ -60,18 +60,10 @@ namespace Node_cs
         return null;
     }
 
-    private static void DisplayState(ApiConfig config){
-        Tuple<int, int>[] keys = config.savedValues.Keys.ToArray();
-        for (int i = 0; i < keys.Length; i++)
-        {
-            Console.WriteLine("Key: " + keys[i] + " Value: " + config.savedValues[keys[i]]);
-        }
-    }
 
     public static XYValues GetValue(string values, ApiConfig config)
     {
         Console.WriteLine("Received GetValue-call with params: " + values);
-        DisplayState(config);
         string[] splitValues = values.Split("_");
         double x = Double.Parse(splitValues[0].Replace(',', '.'), CultureInfo.InvariantCulture);
         double y = Double.Parse(splitValues[1].Replace(',', '.'), CultureInfo.InvariantCulture);
