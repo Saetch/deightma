@@ -72,7 +72,7 @@ services:
         dockerfile: Dockerfile
         context: ./vueWebUI
       ports:
-        - "8080:80"
+        - "8088:80"
       networks:
         - distr-network
       deploy:
