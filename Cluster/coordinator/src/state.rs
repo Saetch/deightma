@@ -118,7 +118,7 @@ impl InteriorMutableState{
 
         for x in 0..WIDTH {
             for y in 0..HEIGHT {
-                to_distribute.push(Position{x: x as i32, y: y as i32, value: rand.gen_range(0.0..(y +1 )as f64)});
+                to_distribute.push(Position{x: x as i32, y: y as i32, value: rand.gen_range(-10.0 .. 10.0 as f64)});
             }
         }
         true

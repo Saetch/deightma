@@ -1,11 +1,13 @@
 
+use core::hash;
 use std::sync::Arc;
 
 use actix_web::{web::{self, Json}, HttpResponse, Responder};
 use awc::Client;
 use futures::join;
+use rand::Rng;
 
-use crate::{communication::{NodeRegisterResponse, Position}, deal_with_nodes::{self, distribute_value}, state::{InteriorMutableState, NodeOccupation, NodeState}};
+use crate::{communication::{HashedPosition, NodeRegisterResponse, Position}, deal_with_nodes::{self, distribute_value}, state::{InteriorMutableState, NodeOccupation, NodeState}};
 
 pub const HASHER_SERVICE_URL : &str = "http://hasher_service:8080/hash/";
 
@@ -132,4 +134,17 @@ pub async fn upload_value(body: Json<Position>, data: web::Data<InteriorMutableS
     let result = client.post(url).send_json(&body).await.unwrap().body().await.unwrap();
     return HttpResponse::Ok().body(String::from_utf8(result.to_vec()).unwrap());
 
+}
+
+
+pub async fn generate_multiple_values(body: Json<Vec<HashedPosition>>, data: web::Data<InteriorMutableState>) -> impl Responder {
+    let mut rng = rand::thread_rng();
+    let mut fut_vec = Vec::new();
+    for position in body.iter() {
+        let fut = distribute_value(position.x, position.y, rng.gen_range(-10.0 .. 10.0), position.hash,  data.clone());
+        fut_vec.push(fut);
+    }
+    let _ = futures::future::join_all(fut_vec).await;
+    
+    HttpResponse::Ok().body("Values distributed")
 }

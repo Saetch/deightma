@@ -1,4 +1,5 @@
 
+using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
 using System.Text.Json.Serialization;
@@ -9,7 +10,7 @@ namespace Node_cs
     public class ApiConfig
     {
 
-        public Dictionary<Tuple<int, int>, double> savedValues = new Dictionary<Tuple<int, int>, double>();
+        public ConcurrentDictionary<Tuple<int, int>, double> savedValues = new ConcurrentDictionary<Tuple<int, int>, double>();
         public String BICUBIC_INTERPOLATION_SERVICE_URL = "http://bicubic_interpolation_service:8080/calculate";
         public String hostname = Environment.GetEnvironmentVariable("HOSTNAME");
         public String COORDINATOR_SERVICE_URL = "coordinator";
@@ -147,10 +148,8 @@ namespace Node_cs
                 try {
                     Console.WriteLine("Received addValue-call with params: " + toAdd.x + " " + toAdd.y + " " + toAdd.value);
                     var key = new Tuple<int, int>(toAdd.x, toAdd.y);
-                    if (savedValues.ContainsKey(new Tuple<int, int>(toAdd.x, toAdd.y))){
+                    if (!savedValues.TryAdd(key, toAdd.value)){
                         savedValues[key] = toAdd.value;
-                    }else{
-                        savedValues.Add(key, toAdd.value);
                     }
 
                     return Results.Ok("Value added: " + toAdd.x + " " + toAdd.y + " " + toAdd.value);
@@ -158,8 +157,36 @@ namespace Node_cs
                     return Results.BadRequest(e.Message);
                 }
             });
+            app.MapGet("/hasValues", (String vec) =>
+            {
+                List<Tuple<int, int>> values = InterpretHasValues(vec);
+                Console.WriteLine("Received hasValues-call with params: " + vec);
+                List<XYValues> returnValues = new List<XYValues>();
+                foreach (Tuple<int, int> value in values){
+                    if (savedValues.ContainsKey(value)){
+                        returnValues.Add(new XYValues { x = value.Item1, y = value.Item2, value = savedValues[value] });
+                    }
+                }
+                return Results.Ok(returnValues);
+            });
             
             
+        }
+
+
+        private static List<Tuple<int, int>> InterpretHasValues(String vec){
+            List<Tuple<int, int>> values = new List<Tuple<int, int>>();
+            String [] parts = vec.Split(";");
+            foreach (String part in parts){
+                if (part.Length < 2){
+                    continue;
+                }
+                String [] xy = part.Split(",");
+                int x = Int32.Parse(xy[0]);
+                int y = Int32.Parse(xy[1]);
+                values.Add(new Tuple<int, int>(x, y));
+            }
+            return values;
         }
 
 
@@ -194,7 +221,7 @@ namespace Node_cs
                 int x = Int32.Parse(valueParts[0].Split(":")[1]);
                 int y = Int32.Parse(valueParts[1].Split(":")[1]);
                 double value = Double.Parse(valueParts[2].Replace("}","").Replace("]","").Split(":")[1]);
-                savedValues.Add(new Tuple<int, int>(x,y), value);
+                savedValues.TryAdd(new Tuple<int, int>(x, y), value);
             }
         
             Console.WriteLine("Finished computing the response from coordinator service ... ");

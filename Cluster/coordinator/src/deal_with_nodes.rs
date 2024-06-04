@@ -8,7 +8,7 @@ use crate::{communication::{NodeRegisterResponse, Position}, state::{InteriorMut
 #[inline(always)]
 pub async fn redistribute_values(data: Arc<InteriorMutableState>, hash_value: u16) -> NodeRegisterResponse {
     println!("Redistributing values for node with hash value: {}", hash_value);
-    let mut positions_vec : Vec<Position> = Vec::new();
+    let positions_vec;
     let mut all_known_nodes = data.known_nodes.write().await;
     let index = all_known_nodes.binary_search_by(|x| x.hash_value.cmp(&hash_value));
     if let Ok(index) = index {
@@ -44,10 +44,23 @@ pub async fn redistribute_values(data: Arc<InteriorMutableState>, hash_value: u1
 }
 
 
-pub async fn distribute_value(x: i32, y: i32, value: f64, data: web::Data<InteriorMutableState>){
-
-
-    println!("Distributing value: ({}, {}, {})", x, y, value);
-    println!("distribute_value called but not yet implemented!");
+pub async fn distribute_value(x: i32, y: i32, value: f64, hash: u16, data: web::Data<InteriorMutableState>){
+    let known_nodes = data.known_nodes.read().await;
+    let index = known_nodes.binary_search_by(|x| x.hash_value.cmp(&hash));
+    let pos_body = Position{x, y, value};
+    let Ok(i) = index else{
+        let index_in_known_nodes = if index.err().unwrap() < known_nodes.len() {index.err().unwrap()} else {0};
+        let url = format!("http://{}:5552/addValue", known_nodes[index_in_known_nodes].name);
+        let client = awc::Client::default();
+        let response = client.post(url).send_json(&pos_body).await.unwrap().body().await.unwrap();
+        println!("Response: {:?}", response);
+        return;
+    };
+    let index_in_known_nodes = if i < known_nodes.len() {i} else {0};
+    let url = format!("http://{}:5552/addValue", known_nodes[index_in_known_nodes].name);
+    let client = awc::Client::default();
+    let response = client.post(url).send_json(&pos_body).await.unwrap().body().await.unwrap();
+    println!("Response: {:?}", response);
+    return;
     
 }

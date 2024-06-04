@@ -16,7 +16,13 @@ pub enum NodeCommand{
         positions: Vec<Position>,
     }
 }
-
+#[derive(Debug, Serialize, Clone, Copy, Deserialize)]
+pub struct HashedPosition{
+    pub x: i32,
+    pub y: i32,
+    #[serde(alias = "hashValue")]
+    pub hash: u16,
+}
 
 #[derive(Debug, Serialize, Clone, Copy, Deserialize)]
 pub struct Position{
