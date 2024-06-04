@@ -504,11 +504,11 @@ namespace Node_cs
                 }
                 var tuple = new Tuple<int, int>(pointHash.x, pointHash.y);
                 var ret = api.savedValues.ContainsKey(tuple);
-                if(!ret) throw new Exception("Tried removing nonexistent value");
+                if (!ret) throw new Exception("Tried removing nonexistent value");
 
                 double outp;
                 api.savedValues.TryGetValue(new Tuple<int, int>(pointHash.x, pointHash.y), out outp);
-                var removed = api.savedValues.Remove(new Tuple<int, int>(pointHash.x, pointHash.y));
+                var removed = api.savedValues.TryRemove(new KeyValuePair<Tuple<int, int>, double>(new Tuple<int, int>(pointHash.x, pointHash.y), outp));
                 if (!removed) throw new Exception("Failed to remove value");
                 resultXYValues.Add(new XYValues { x = pointHash.x, y = pointHash.y, value = outp });
                 

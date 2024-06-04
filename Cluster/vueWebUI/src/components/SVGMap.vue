@@ -16,7 +16,7 @@
         <circle v-for="corner in corners" :key="corner[0]" :cx="corner[1].x" :cy="corner[1].y" r="7" fill="white" />
         <!-- Draw edges -->
         <line v-for="edge in edges" :key="edge[0]" :x1="edge[1].x1" :y1="edge[1].y1" :x2="edge[1].x2" :y2="edge[1].y2" stroke="white" />
-        <circle key="currentRequest" :cx="currentRequestPositionInView.x" :cy="currentRequestPositionInView.y" r="6" fill="green"/>
+        <circle key="currentRequest" :cx="currentRequestPositionInView.x" :cy="currentRequestPositionInView.y" :r=radius fill="green"/>
       </svg>
     </div>
 
@@ -54,7 +54,8 @@ export default {
       dist_between_corners: 100,
       translateX: 0,
       translateY: 0,
-      directions: {up: false, down: false, left: false, right: false}
+      directions: {up: false, down: false, left: false, right: false},
+      radius: 6,
     };
   },
   async mounted() {
@@ -73,7 +74,7 @@ export default {
     this.position.x = window.innerWidth / 2 - this.svgWidth / 2;
     this.position.y = window.innerHeight / 2 - this.svgHeight / 2;
     this.requestNewData();
-    setInterval(this.MoveRequest, 30);
+    setInterval(this.MoveRequest, 1000/27);
   },
   unmounted() {
   },
@@ -152,18 +153,31 @@ export default {
       if (xCeil != this.currentPosCeil.x || yCeil != this.currentPosCeil.y) {
         this.currentPosCeil.x = xCeil;
         this.currentPosCeil.y = yCeil;
-        console.log("Passed a border!");
-        if(newData){
-          await this.requestNewCeilData();
+        if(newData ){
+          if(!this.hasNeededCorners(xCeil, yCeil)){
+            this.requestNewCeilData();
+          }else {
+            this.requestNewData();
+          }
         }
       } else {
         if(newData){
-          await this.requestNewData();
+          this.requestNewData();
         }
       }
       
       this.currentRequestPositionInView.x = this.corners.get("0/0").x + this.dist_between_corners * this.currentRequestPosition.x;
       this.currentRequestPositionInView.y = this.corners.get("0/0").y - this.dist_between_corners * this.currentRequestPosition.y;
+    },
+    hasNeededCorners(x, y){
+      for( let i = x - 2; i <= x + 2; i++){
+        for( let j = y - 2; j <= y + 2; j++){
+          if(!this.corners.has(i+'/'+j)){
+            return false;
+          }
+        }
+      }
+      return true;
     },
     async requestNewData(){
       const response = await fetch(this.informationUrl + "/getValue/" + this.currentRequestPosition.x + "/" + this.currentRequestPosition.y);
@@ -173,7 +187,11 @@ export default {
     async requestNewCeilData(){
       const response = await fetch(this.informationUrl + "/getValueAutoInc/" + this.currentRequestPosition.x + "/" + this.currentRequestPosition.y+"/3");
       const data = await response.json();
-      console.log(data);
+      this.zValue = data.value.value;
+      data.addedCorners.forEach(corner => {
+        this.addCorner(corner.x, corner.y);
+        this.addEdges(corner.x, corner.y);
+      });
     },
     startDrag(event) {
       this.isDragging = true;
@@ -219,7 +237,7 @@ export default {
     this.scale = newScale;
     this.position.x -= newXDistFromCenter - xDistFromCenter;
     this.position.y -= newYDistFromCenter - yDistFromCenter;
-    
+    this.radius = 6 / newScale;
   },
     onMouseOver() {
       if (!this.isDragging) {
