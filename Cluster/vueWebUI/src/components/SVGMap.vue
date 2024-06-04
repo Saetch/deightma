@@ -19,7 +19,6 @@
         <circle key="currentRequest" :cx="currentRequestPositionInView.x" :cy="currentRequestPositionInView.y" :r=radius fill="green"/>
       </svg>
     </div>
-
     <div class="sidebar-left">
       <ResultDisplaySidebar :x="currentRequestPosition.x" :y="currentRequestPosition.y" :z="zValue" @update-stepSize="handleUpdateStepSize"/>
     </div>
@@ -56,6 +55,7 @@ export default {
       translateY: 0,
       directions: {up: false, down: false, left: false, right: false},
       radius: 6,
+      initialized: false
     };
   },
   async mounted() {
@@ -74,6 +74,8 @@ export default {
     this.position.x = window.innerWidth / 2 - this.svgWidth / 2;
     this.position.y = window.innerHeight / 2 - this.svgHeight / 2;
     this.requestNewData();
+    this.initialized = true;
+    this.UpdateRequestview();
     setInterval(this.MoveRequest, 1000/27);
   },
   unmounted() {
@@ -165,9 +167,11 @@ export default {
           this.requestNewData();
         }
       }
-      
-      this.currentRequestPositionInView.x = this.corners.get("0/0").x + this.dist_between_corners * this.currentRequestPosition.x;
+      if(this.initialized){
+        this.currentRequestPositionInView.x = this.corners.get("0/0").x + this.dist_between_corners * this.currentRequestPosition.x;
       this.currentRequestPositionInView.y = this.corners.get("0/0").y - this.dist_between_corners * this.currentRequestPosition.y;
+      }
+
     },
     hasNeededCorners(x, y){
       for( let i = x - 2; i <= x + 2; i++){
@@ -262,8 +266,9 @@ export default {
       });
     },
     addCorner(x, y){
-      this.increaseSizeIfNecessary(x, y);
       const offset = 100;
+
+      this.increaseSizeIfNecessary(x, y, 100);
       //find correct value for x and y
       let x_val = 0;
       let y_val = 0;
@@ -331,7 +336,7 @@ export default {
         edge.x1 += offset;
         edge.x2 += offset;
       });
-      this.position.x += offset;
+      this.position.x -= offset * (this.scale /2  + 0.5);
       this.UpdateRequestview(false);
       this.svgWidth += offset;
     },
@@ -343,7 +348,7 @@ export default {
         edge.y1 += offset;
         edge.y2 += offset;
       });
-      this.position.y -= offset;
+      this.position.y -= offset * (this.scale /2 + 0.5);
       this.UpdateRequestview(false);
       this.svgHeight += offset;
     },
