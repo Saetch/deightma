@@ -53,6 +53,8 @@ jobs:
         docker push ghcr.io/saetch/deightma_nodecs:latest
     - run: |
         docker push ghcr.io/saetch/hasher_service:latest
+    - run: |
+        docker push ghcr.io/saetch/deightma_webui:latest
   build-client:
     runs-on: Ubuntu-latest
     steps:

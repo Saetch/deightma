@@ -226,16 +226,12 @@ export default {
       newScale -= zoomFactor;
       if (newScale < minScale) newScale = minScale;
     }
-    console.log(newScale);
 
-    console.log("Event position: "+event.clientX+" "+event.clientY);
 
     let xDistFromCenter = (event.clientX - (this.position.x) - this.svgWidth / 2.0);
     let yDistFromCenter = (event.clientY - (this.position.y) - this.svgHeight / 2.0);
-    console.log("Distance from center: "+xDistFromCenter+" "+yDistFromCenter);
     let newXDistFromCenter = xDistFromCenter * (newScale / this.scale);
     let newYDistFromCenter = yDistFromCenter * (newScale / this.scale);
-    console.log("Distance from center: "+newXDistFromCenter+" "+newYDistFromCenter);
 
 
     this.scale = newScale;
@@ -315,6 +311,7 @@ export default {
         this.mapBorders.x1 = x;
       }else if (x > this.mapBorders.x2){
         this.svgWidth += offset * (x - this.mapBorders.x2);
+        this.position.x += offset * (this.scale /2 - 0.5) * (x - this.mapBorders.x2);
         this.mapBorders.x2 = x;
       }
       if(y>this.mapBorders.y2){
@@ -324,6 +321,8 @@ export default {
         this.mapBorders.y2 = y;
       }else if (y < this.mapBorders.y1){
         this.svgHeight += offset * (this.mapBorders.y1 - y);
+
+        this.position.y += offset * (this.scale /2 - 0.5) * (this.mapBorders.y1 - y);
         this.mapBorders.y1 = y;
       }
 

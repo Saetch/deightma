@@ -14,7 +14,7 @@
         </svg>
         <div>
           <div class="display">StepSize: <span id="stepSizeDisplay">{{stepSize}}</span></div>
-          <input type="range" id="stepSizeSlider" class="slider" min="0.001" max="1.0" step="0.001" :value="stepSize" @input="updateStepSize">
+          <input type="range" id="stepSizeSlider" class="slider" min="0.001" max="0.35" step="0.001" :value="stepSize" @input="updateStepSize">
        </div>
       </div>
   </template>

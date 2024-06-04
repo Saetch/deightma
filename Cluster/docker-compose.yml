@@ -66,6 +66,24 @@ services:
       deploy:
         mode: replicated
         replicas: 1
+    webUi:
+      image: ghcr.io/saetch/deightma_webui:latest
+      build:
+        dockerfile: Dockerfile
+        context: ./vueWebUI
+      ports:
+        - "8080:80"
+      networks:
+        - distr-network
+      deploy:
+        mode: replicated
+        replicas: 1
+      depends_on:
+        - coordinator
+        - nodecs
+        - master
+        - hasher_service
+        - bicubic_interpolation_service
 networks:
   distr-network:
     driver: bridge
