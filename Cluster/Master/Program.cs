@@ -173,7 +173,50 @@ public class Program{
             }
             
         });
+        app.MapGet("/countValues",  async () =>
+        {   
+            try {
+                var result = await GetAllNodes(new HttpClient());
+                List<XYValues> allValues = new List<XYValues>();
+                List<Task<List<XYValues>>> tasks = new List<Task<List<XYValues>>>();
+                foreach(NodeResponse node in result){
+                    tasks.Add(GetAllValuesFromNode(node, new HttpClient()));
+                }
+                await Task.WhenAll(tasks);
+                foreach(Task<List<XYValues>> task in tasks){
+                    allValues.AddRange(task.Result);
+                }
+                Console.WriteLine("Returning result for count: " + allValues.Count);
 
+                return Results.Ok(allValues.Count);
+            
+            } catch (Exception e) {
+                return Results.BadRequest(e.Message);
+            }
+            
+        });
+        app.MapGet("/countSavedValues",  async () =>
+        {   
+            try {
+                var result = await GetAllNodes(new HttpClient());
+                List<XYValues> allValues = new List<XYValues>();
+                List<Task<List<XYValues>>> tasks = new List<Task<List<XYValues>>>();
+                foreach(NodeResponse node in result){
+                    tasks.Add(GetAllValuesFromNode(node, new HttpClient()));
+                }
+                await Task.WhenAll(tasks);
+                foreach(Task<List<XYValues>> task in tasks){
+                    allValues.AddRange(task.Result);
+                }
+                Console.WriteLine("Returning result for count: " + allValues.Count);
+
+                return Results.Ok(allValues.Count);
+            
+            } catch (Exception e) {
+                return Results.BadRequest(e.Message);
+            }
+            
+        });
         app.Run();
         
 
