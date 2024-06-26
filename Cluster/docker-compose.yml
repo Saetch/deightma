@@ -12,7 +12,7 @@ services:
         - "5000:8080"
       networks:
         - distr-network
-    bicubic_interpolation_service: 
+    bicubic: 
       container_name: bicubic_interpolation_service
       image: ghcr.io/saetch/bicubic_interpolation_service:latest
       build:
