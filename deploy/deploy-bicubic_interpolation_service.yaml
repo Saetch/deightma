@@ -13,7 +13,7 @@ spec:
     spec:
       containers:
         - name: app
-          image: ghcr.io/saetch/deightma_bicubic_interpolation_service:latest
+          image: ghcr.io/saetch/bicubic_interpolation_service:latest
           ports:
             - containerPort: 8080
               name: bicubic-p
