@@ -11,7 +11,7 @@ namespace Node_cs
     {
 
         public ConcurrentDictionary<Tuple<int, int>, double> savedValues = new ConcurrentDictionary<Tuple<int, int>, double>();
-        public String BICUBIC_INTERPOLATION_SERVICE_URL = "http://bicubic_interpolation_service:8080/calculate";
+        public String BICUBIC_INTERPOLATION_SERVICE_URL = "http://bicubic:8080/calculate";
         public String hostname = Environment.GetEnvironmentVariable("HOSTNAME");
         public String COORDINATOR_SERVICE_URL = "coordinator";
         public int PORT = 8080;
