@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hasher-service
+spec:
+  selector:
+    matchLabels:
+      app: hasher-service
+  template:
+    metadata:
+      labels:
+        app: hasher-service
+    spec:
+      containers:
+        - name: app
+          image: ghcr.io/saetch/hasher_service:latest
+          ports:
+            - containerPort: 8080
+              name: hasher-p
+          env:
+            - name: DB_HOST
+              value: test-db
+          resources:
+            requests:
+              memory: "20Mi"
+              cpu: "10m"
+            limits:
+              memory: "100Mi"
+              cpu: "100m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hasher-service
+spec:
+  selector:
+    app: hasher-service
+  ports:
+    - name: hasher-p
+      protocol: TCP
+      port: 8080
+      targetPort: hasher-p
