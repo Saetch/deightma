@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: coordinator
+spec:
+  selector:
+    matchLabels:
+      app: coordinator
+  template:
+    metadata:
+      labels:
+        app: coordinator
+    spec:
+      containers:
+        - name: app
+          image: ghcr.io/saetch/deightma_coordinator:latest
+          ports:
+            - containerPort: 8080
+              name: coordinator-p
+          env:
+            - name: DB_HOST
+              value: test-db
+          resources:
+            requests:
+              memory: "20Mi"
+              cpu: "10m"
+            limits:
+              memory: "100Mi"
+              cpu: "100m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: coordinator
+spec:
+  selector:
+    app: coordinator
+  ports:
+    - name: coordinator-p
+      protocol: TCP
+      port: 8080
+      targetPort: coordinator-p
