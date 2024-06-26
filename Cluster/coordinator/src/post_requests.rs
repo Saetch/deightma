@@ -9,7 +9,7 @@ use rand::Rng;
 
 use crate::{communication::{HashedPosition, NodeRegisterResponse, Position}, deal_with_nodes::{self, distribute_value}, state::{InteriorMutableState, NodeOccupation, NodeState}};
 
-pub const HASHER_SERVICE_URL : &str = "http://hasher_service:8080/hash/";
+pub const HASHER_SERVICE_URL : &str = "http://hasher-service:8080/hash/";
 
 pub async fn register(path: web::Path<String>, data: web::Data<InteriorMutableState>) -> impl Responder {
     let client = Client::default();

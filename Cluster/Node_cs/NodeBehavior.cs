@@ -507,7 +507,7 @@ namespace Node_cs
                 TypeInfoResolver = AppJsonSerializerContext.Default
             };
             using (HttpClient httpClient = new HttpClient()){
-                string baseUrl = "http://hasher_service:8080/hash_multiple";
+                string baseUrl = "http://hasher-service:8080/hash_multiple";
                 Console.WriteLine("Making request to: " + baseUrl);
                 var json = JsonSerializer.Serialize(positions, options);
                 var query = "?vec=" + json.Replace("[{","").Replace("}]","").Replace("},{",";").Replace("\"","");

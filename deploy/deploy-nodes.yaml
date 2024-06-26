@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: d-nodecs
+spec:
+  replicas: 4
+  selector:
+    matchLabels:
+      app: d-nodecs
+  template:
+    metadata:
+      labels:
+        app: d-nodecs
+    spec:
+      containers:
+        - name: app
+          image: ghcr.io/saetch/deightma_nodecs:latest
+          ports:
+            - containerPort: 5552
+              name: d-nodecs-p
+          env:
+            - name: DB_HOST
+              value: test-db
+          resources:
+            requests:
+              memory: "20Mi"
+              cpu: "10m"
+            limits:
+              memory: "100Mi"
+              cpu: "100m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: d-nodecs
+spec:
+  selector:
+    app: d-nodecs
+  ports:
+    - name: d-nodecs-p
+      protocol: TCP
+      port: 5552
+      targetPort: d-nodecs-p
