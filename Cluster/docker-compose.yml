@@ -54,7 +54,7 @@ services:
       depends_on:
         - coordinator
         - hasher_service
-    hasher_service:
+    hasher-service:
       image: ghcr.io/saetch/hasher_service:latest
       ports:
         - "5002:8080"       ## this is for debug purposes, the service does not need to be exposed to the host at all

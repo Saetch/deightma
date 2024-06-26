@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Text.Json.Serialization;
 using System.Globalization;
 using System.Text.Json;
@@ -356,7 +356,7 @@ public class Program{
     }
 
     static async Task<List<Position>> GetPositions(List<Tuple<int, int>> positions, HttpClient httpClient){
-        String url = "http://hasher_service:8080/hash_multiple?vec=";
+        String url = "http://hasher-service:8080/hash_multiple?vec=";
         foreach(Tuple<int, int> position in positions){
             url += "x:"+position.Item1 + "," + "y:"+position.Item2 + ";";
         }
