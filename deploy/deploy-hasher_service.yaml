@@ -1,22 +1,22 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: hasher-service
+  name: hasher
 spec:
   selector:
     matchLabels:
-      app: hasher-service
+      app: hasher
   template:
     metadata:
       labels:
-        app: hasher-service
+        app: hasher
     spec:
       containers:
         - name: app
           image: ghcr.io/saetch/hasher_service:latest
           ports:
             - containerPort: 8080
-              name: hasher-p
+              name: hasher-port
           env:
             - name: DB_HOST
               value: test-db
@@ -34,9 +34,9 @@ metadata:
   name: hasher-service
 spec:
   selector:
-    app: hasher-service
+    app: hasher
   ports:
-    - name: hasher-p
+    - name: hasher-port
       protocol: TCP
       port: 8080
-      targetPort: hasher-p
+      targetPort: hasher-port

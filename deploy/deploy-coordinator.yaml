@@ -16,7 +16,7 @@ spec:
           image: ghcr.io/saetch/deightma_coordinator:latest
           ports:
             - containerPort: 8080
-              name: coordinator-p
+              name: coord-port
           env:
             - name: DB_HOST
               value: test-db
@@ -36,7 +36,7 @@ spec:
   selector:
     app: coordinator
   ports:
-    - name: coordinator-p
+    - name: coord-port
       protocol: TCP
       port: 8080
-      targetPort: coordinator-p
+      targetPort: coord-port

@@ -9,7 +9,7 @@ RUN cargo build --release
 
 
 FROM alpine:3.19.1
-
+RUN apk add curl
 COPY --from=BUILDER /app/target/release/hasher_service /app/
 WORKDIR /app/
 CMD ["./hasher_service"]
