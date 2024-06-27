@@ -1,5 +1,6 @@
 
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using System.Text.Json.Serialization;
@@ -15,60 +16,52 @@ namespace Node_cs
         public String hostname = Environment.GetEnvironmentVariable("HOSTNAME");
         public String COORDINATOR_SERVICE_URL = "coordinator";
         public int PORT = 8080;
-        public string PODENV = Environment.GetEnvironmentVariable("PODENV");
+
+        public String PODENV = Environment.GetEnvironmentVariable("PODENV");
         public ushort ownerHash = 0;
-        Console.WriteLine("PODENV is: "+ this.PODENV);
-
-        if (this.PODENV == "enabled"){
-            try
-            {
-                Console.WriteLine("Attempting to get the pod IP address ...");
-                // Start a new process to run the "hostname -i" command
-                ProcessStartInfo processStartInfo = new ProcessStartInfo()
-                {
-                    FileName = "/bin/sh",
-                    Arguments = "-c \"hostname -i\"",
-                    RedirectStandardOutput = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                };
-
-                using (Process process = new Process())
-                {
-                    process.StartInfo = processStartInfo;
-                    process.Start();
-
-                    // Read the output (which should be the pod IP address)
-                    string podIP = process.StandardOutput.ReadToEnd().Trim();
-                    process.WaitForExit();
-
-                    // Print or use the pod IP as needed
-                    hostname = podIP;
-                    Console.WriteLine("Pod IP: " + podIP);
-
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Error: " + ex.Message);
-            }
-        }
-        
-
-
-
-
-
         public int initializeConfigValues()
         {
             Console.WriteLine("hostname is: "+ this.hostname);
             String env = Environment.GetEnvironmentVariable("CLUSTER_ENVIRONMENT");
+            Console.WriteLine("CLUSTER_ENVIRONMENT is: "+ env);
             if (env == "local"){
                 Console.WriteLine("CLUSTER_ENVIRONMENT is: "+ env);
                     this.COORDINATOR_SERVICE_URL = "localhost";
                     this.PORT = 5003;
                     this.BICUBIC_INTERPOLATION_SERVICE_URL = "http://localhost:5555/calculate";
                     this.hostname = "node1";
+            }
+            if (env == "pod"){
+                try
+                {
+                    // Start a new process to run the "hostname -i" command
+                    ProcessStartInfo processStartInfo = new ProcessStartInfo()
+                    {
+                        FileName = "/bin/sh",
+                        Arguments = "-c \"hostname -i\"",
+                        RedirectStandardOutput = true,
+                        UseShellExecute = false,
+                        CreateNoWindow = true
+                    };
+
+                    using (Process process = new Process())
+                    {
+                        process.StartInfo = processStartInfo;
+                        process.Start();
+
+                        // Read the output (which should be the pod IP address)
+                        string podIP = process.StandardOutput.ReadToEnd().Trim();
+                        process.WaitForExit();
+
+                        // Print or use the pod IP as needed
+                        Console.WriteLine("Pod IP: " + podIP);
+                        this.hostname = podIP;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("Error trying to execute hostname command: " + ex.Message);
+                }
             }
             TcpClient tcpClient = new TcpClient();
             var result = tcpClient.BeginConnect(this.COORDINATOR_SERVICE_URL, this.PORT, null, null);
