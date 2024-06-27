@@ -38,7 +38,7 @@ services:
         replicas: 1              ## this is needed as of now. Do not change this or the values will be distributed unevenly. The coordinator is yet to be made replicatable
       restart: "no"
       depends_on:
-        - hasher_service
+        - hasher-service
     nodecs:
       image: ghcr.io/saetch/deightma_nodecs:latest
       build:
@@ -53,7 +53,7 @@ services:
         replicas: 7
       depends_on:
         - coordinator
-        - hasher_service
+        - hasher-service
     hasher-service:
       image: ghcr.io/saetch/hasher_service:latest
       ports:
@@ -82,8 +82,8 @@ services:
         - coordinator
         - nodecs
         - master
-        - hasher_service
-        - bicubic_interpolation_service
+        - hasher-service
+        - bicubic
 networks:
   distr-network:
     driver: bridge
