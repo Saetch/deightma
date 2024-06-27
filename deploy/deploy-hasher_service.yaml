@@ -1,22 +1,22 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: coordinator
+  name: hasher
 spec:
   selector:
     matchLabels:
-      app: coordinator
+      app: hasher
   template:
     metadata:
       labels:
-        app: coordinator
+        app: hasher
     spec:
       containers:
         - name: app
-          image: ghcr.io/saetch/deightma_coordinator:latest
+          image: ghcr.io/saetch/hasher_service:latest
           ports:
             - containerPort: 8080
-              name: coord-port
+              name: hasher-port
           env:
             - name: DB_HOST
               value: test-db
@@ -31,12 +31,12 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: coordinator
+  name: hasher-service
 spec:
   selector:
-    app: coordinator
+    app: hasher
   ports:
-    - name: coord-port
+    - name: hasher-port
       protocol: TCP
       port: 8080
-      targetPort: coord-port
+      targetPort: hasher-port
