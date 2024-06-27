@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: d-nodecs
+  namespace: default
+spec:
+  clusterIP: None
+  selector:
+    app: d-nodecs
+  ports:
+    - protocol: TCP
+      port: 5552
+      targetPort: d-nodecs-pe
