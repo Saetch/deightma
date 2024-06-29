@@ -67,7 +67,7 @@ services:
         mode: replicated
         replicas: 1
     webUi:
-      image: ghcr.io/saetch/deightma_webui_small:latest
+      image: ghcr.io/saetch/deightma_webui:latest
       build:
         dockerfile: Dockerfile
         context: ./vueWebUI
