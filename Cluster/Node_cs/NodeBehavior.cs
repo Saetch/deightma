@@ -139,6 +139,7 @@ namespace Node_cs
         int index = len/2;
         int upperBound = len -1;
         int lowerBound = 0;
+        int toPrint = 5;
         Console.WriteLine("Binary searching for NodeResponses: ");
         foreach (NodeResponse node in hashValues){
             Console.WriteLine(node.name + " " + node.hash);
@@ -154,11 +155,17 @@ namespace Node_cs
             }
             if(aimedValue > currentValue){
                 lowerBound = index+1;
-                Console.WriteLine("Increasing lowerBound to: "+lowerBound);
+                if (toPrint > 0){
+                    Console.WriteLine("Increasing lowerBound to: "+lowerBound);
+                    toPrint--;
+                }
                 index += (upperBound - index)/2;
             }else{
                 upperBound = index -1;
-                Console.WriteLine("Decreasing upperBound to: "+upperBound);
+                if (toPrint > 0){
+                    Console.WriteLine("Decreasing upperBound to: "+upperBound);
+                    toPrint--;
+                }
                 index -= Math.Max(1,(index - lowerBound)/2);
             }
         }
