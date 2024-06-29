@@ -76,6 +76,7 @@ export default {
     this.requestNewData();
     this.initialized = true;
     this.UpdateRequestview();
+    console.log("Running webUi with an expected kubernetes connection!");
     setInterval(this.MoveRequest, 1000/10);
   },
   unmounted() {
