@@ -11,7 +11,5 @@ RUN npm run build
 
 # production stage
 FROM nginx:stable-alpine as production-stage
-ARG REQUESTS_PER_SECOND
-ENV REQUESTS_PER_SECOND=$REQUESTS_PER_SECOND
 COPY --from=build-stage /app/dist /usr/share/nginx/html
 CMD ["nginx", "-g", "daemon off;"]
