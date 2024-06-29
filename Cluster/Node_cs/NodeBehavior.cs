@@ -161,7 +161,7 @@ namespace Node_cs
                 if (toPrint > 0){
                     Console.WriteLine("Increasing lowerBound to: "+lowerBound);
                 }
-                index += (upperBound - index)/2;
+                index += Math.Max(1,(upperBound - index)/2);
             }else{
                 upperBound = index -1;
                 if (toPrint > 0){
