@@ -13,7 +13,7 @@ spec:
     spec:
       containers:
         - name: app
-          image: ghcr.io/saetch/deightma_webui:latest
+          image: ghcr.io/saetch/deightma_webui_small:latest
           ports:
             - containerPort: 80
               name: web-ui-port
