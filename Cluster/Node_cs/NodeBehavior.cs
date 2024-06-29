@@ -33,8 +33,8 @@ namespace Node_cs
             string baseUrl = "http://"+config.COORDINATOR_SERVICE_URL+":"+config.PORT+"/organize/get_all_nodes";
             Console.WriteLine("Making request to: " + baseUrl);
             HttpResponseMessage response = await httpClient.SendAsync(new HttpRequestMessage(HttpMethod.Get, baseUrl));
-            string responseBody = await response.Content.ReadAsStringAsync();
             Console.WriteLine("Received response for values from nodes: " + responseBody);
+            string responseBody = await response.Content.ReadAsStringAsync();
             //deserialize responseBody to List<NodeResponse>
             var ret = ParseNodeResponsesFromResponse(responseBody);
 
@@ -139,11 +139,7 @@ namespace Node_cs
         int index = len/2;
         int upperBound = len -1;
         int lowerBound = 0;
-        Console.WriteLine("Binary searching for NodeResponses: ");
-        foreach (NodeResponse node in hashValues){
-            Console.WriteLine(node.name + " " + node.hash);
-        }
-        Console.WriteLine("Trying to find node for hashValue: "+aimedValue);
+        Console.WriteLine("Trying to find node for hashValue: "+aimedValue+" with binary search ... ");
         while (true){
             int currentValue = hashValues[index].hash;
             int nextValue = hashValues[index + 1].hash;
