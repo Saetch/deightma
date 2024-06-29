@@ -65,8 +65,7 @@ jobs:
         docker push ghcr.io/saetch/hasher_service:latest
     - run: |
         docker push ghcr.io/saetch/deightma_webui:latest
-    - run: docker build -f ./Cluster/vueWebUICluster/Dockerfile -t ghcr.io/saetch/deightma_webui_small:latest ./Cluster/vueWebUICluster/
-    - run: docker push ghcr.io/saetch/deightma_webui_small:latest
+
 
   build-client:
     runs-on: Ubuntu-latest
