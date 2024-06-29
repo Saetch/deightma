@@ -48,6 +48,11 @@ jobs:
        package-name: 'deightma_webui'
        package-type: container
        min-versions-to-keep: 1
+    - uses: actions/delete-package-versions@v5
+      with:
+       package-name: 'deightma_webui_small'
+       package-type: container
+       min-versions-to-keep: 1
     - run: |
         docker push ghcr.io/saetch/deightma_coordinator:latest
     - run: |
@@ -62,6 +67,7 @@ jobs:
         docker push ghcr.io/saetch/deightma_webui:latest
     - run: docker build -f ./Cluster/vueWebUICluster/Dockerfile -t ghcr.io/saetch/deightma_webui_small:latest ./Cluster/vueWebUICluster/
     - run: docker push ghcr.io/saetch/deightma_webui_small:latest
+
   build-client:
     runs-on: Ubuntu-latest
     steps:
