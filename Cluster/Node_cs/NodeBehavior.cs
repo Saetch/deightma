@@ -33,8 +33,8 @@ namespace Node_cs
             string baseUrl = "http://"+config.COORDINATOR_SERVICE_URL+":"+config.PORT+"/organize/get_all_nodes";
             Console.WriteLine("Making request to: " + baseUrl);
             HttpResponseMessage response = await httpClient.SendAsync(new HttpRequestMessage(HttpMethod.Get, baseUrl));
-            Console.WriteLine("Received response for values from nodes: " + responseBody);
             string responseBody = await response.Content.ReadAsStringAsync();
+            Console.WriteLine("Received response for values from nodes: " + responseBody);
             //deserialize responseBody to List<NodeResponse>
             var ret = ParseNodeResponsesFromResponse(responseBody);
 
