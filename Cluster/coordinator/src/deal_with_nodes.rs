@@ -26,7 +26,7 @@ pub async fn redistribute_values(data: Arc<InteriorMutableState>, hash_value: u1
         let node_to_distribute_from = &all_known_nodes[to_distribute_from];
         let mut worked_communication = false; 
         let mut response = Err(awc::error::SendRequestError::Timeout);
-        for _ in 0..=5{
+        for _ in 0..=6{
             let url = format!("http://{}:5552/deleteSavedValuesBelow/{}", node_to_distribute_from.name,  hash_value.to_string());
             println!("URL: {}", url);
             //If trying to deal with nonexistent or non-responding node, edit here!
@@ -35,7 +35,7 @@ pub async fn redistribute_values(data: Arc<InteriorMutableState>, hash_value: u1
                 break;
             }else{
                 println!("Failed to communicate with node: {} ... retrying ...", node_to_distribute_from.name);
-                std::thread::sleep(std::time::Duration::from_secs(1));
+                std::thread::sleep(std::time::Duration::from_secs(5));
             }
 
 
