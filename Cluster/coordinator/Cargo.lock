@@ -461,6 +461,7 @@ version = "0.1.0"
 dependencies = [
  "actix-web",
  "awc",
+ "bytes",
  "env_logger",
  "futures",
  "rand",
