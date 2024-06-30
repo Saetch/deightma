@@ -41,7 +41,7 @@ pub async fn redistribute_values(data: Arc<InteriorMutableState>, hash_value: u1
 
 
         }
-        let mut resp: bytes::Bytes;
+        let resp: bytes::Bytes;
         if let Ok(mut response) = response{
             resp = response.body().await.unwrap();
             println!("Response: {:?}", response);
