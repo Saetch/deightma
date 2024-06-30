@@ -30,7 +30,7 @@ pub async fn redistribute_values(data: Arc<InteriorMutableState>, hash_value: u1
             let url = format!("http://{}:5552/deleteSavedValuesBelow/{}", node_to_distribute_from.name,  hash_value.to_string());
             println!("URL: {}", url);
             //If trying to deal with nonexistent or non-responding node, edit here!
-            response = awc::Client::default().post(url).send().await;
+            response = awc::Client::new().post(url).send().await;
             if response.is_ok(){
                 break;
             }else{
