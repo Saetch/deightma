@@ -35,6 +35,7 @@ pub async fn redistribute_values(data: Arc<InteriorMutableState>, hash_value: u1
                 break;
             }else{
                 println!("Failed to communicate with node: {} ... retrying ...", node_to_distribute_from.name);
+                println!("Error: {:?}", response.as_ref().err().unwrap());
                 std::thread::sleep(std::time::Duration::from_secs(5));
             }
 
