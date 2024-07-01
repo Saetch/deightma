@@ -24,7 +24,6 @@ pub async fn redistribute_values(data: Arc<InteriorMutableState>, hash_value: u1
         });
         let to_distribute_from = if index != all_known_nodes.len()-1 {index + 1} else {0} ;  //the values are distributed to the next hash value, so getting the next one after the  current one yields the one that might have a share of values to redistribute
         let node_to_distribute_from = &all_known_nodes[to_distribute_from];
-        let mut worked_communication = false; 
         let mut response = Err(awc::error::SendRequestError::Timeout);
         for _ in 0..=6{
             let url = format!("http://{}:5552/deleteSavedValuesBelow/{}", node_to_distribute_from.name,  hash_value.to_string());

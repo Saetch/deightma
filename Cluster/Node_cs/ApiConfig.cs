@@ -1,5 +1,6 @@
 
 using System.Collections.Concurrent;
+using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
@@ -57,6 +58,8 @@ namespace Node_cs
                         Console.WriteLine("Pod IP: " + podIP);
                         this.hostname = podIP;
                     }
+                    System.Threading.Thread.Sleep(5000);
+
                 }
                 catch (Exception ex)
                 {
