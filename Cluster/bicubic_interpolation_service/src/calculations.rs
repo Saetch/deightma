@@ -87,13 +87,6 @@ pub fn bicubic_interpolation(arr_map: &[[f64;4]; 4], x: f64, y: f64) -> Result<f
     if x < 0.0 || x > 1.0 || y < 0.0 || y > 1.0 {
         return Err("x and y must be between 0 and 1".to_string());
     }
-    println!("Arr_map: {:?}", arr_map);
-    const _B : [[f64;4]; 4] = [
-        [-1.,  1., -1., 1.],
-        [ 0.,  0.,  0., 1.],
-        [ 1.,  1.,  1., 1.],
-        [ 8.,  4.,  2., 1.]
-    ];
 
     const B_A : [[f64;4]; 4] = [
         [-1./6.,  1./2.,  -1./2.,  1./6.],
@@ -101,49 +94,29 @@ pub fn bicubic_interpolation(arr_map: &[[f64;4]; 4], x: f64, y: f64) -> Result<f
         [-1./3.,  -1./2.,  1.0,  -1./6.],
         [ 0.,  1.,  0.,  0.]
     ];
+    let matrix_map = arr2(arr_map);
 
-    const B_A_T : [[f64;4]; 4] = [
-        [-1./6.,  1./2.,  -1./3.,  0.],
-        [ 1./2.,  -1.0,  -1./2.,  1.],
-        [-1./2.,  1./2.,  1.0,  0.],
-        [ 1./6.,  0.,  -1./6.,  0.]
-    ];
-    let matrix_map = Array2::from_shape_fn((4, 4), |(i, j)| arr_map[i][j] as f64);
+    let b_a = arr2(&B_A);
+    let b_a_t = b_a.t().to_owned();
 
 
-    let b_a = Array2::from_shape_fn((4, 4), |(i, j)| B_A[i][j] as f64);
-
-    let b_a_t = Array2::from_shape_fn((4, 4), |(i, j)| B_A_T[i][j] as f64);
+    let x_matrix = arr2(&[[x.powi(3), x.powi(2), x, 1.0]]);;
 
 
+    let y_matrix = arr2(&[[y.powi(3)], [y.powi(2)], [y], [1.0]]);
     let mut xb_a = Array2::zeros((1,4));
+    ndarray::linalg::general_mat_mul(1., &x_matrix, &b_a, 0., &mut xb_a);
+
     let mut yb_a_t = Array2::zeros((4,1));
-    println!("X: {} Y: {}", x, y);
-    let x_matrix = Array2::from_shape_fn((1, 4), |(_i, j)| x.powi(3 - j as i32) as f64);
-    println!("X matrix: {}", x_matrix);
+    ndarray::linalg::general_mat_mul(1., &b_a_t, &y_matrix, 0., &mut yb_a_t);
 
-
-    let y_matrix = Array2::from_shape_fn((4, 1), |(i, _j)| y.powi(3 - i as i32) as f64);
-    println!("Y matrix: {}", y_matrix);
-    ndarray::linalg::general_mat_mul(1., &x_matrix, &b_a, 1., &mut xb_a);
-
-    println!("Matrix x*b_inverse: \n{}", xb_a);
-
-    ndarray::linalg::general_mat_mul(1., &b_a_t, &y_matrix, 1., &mut yb_a_t);
-
-    println!("Matrix y*b_invers_Translated: \n{}", yb_a_t);
 
 
     let mut first_result_matrix = Array2::zeros((1, 4));
-    ndarray::linalg::general_mat_mul(1., &xb_a, &matrix_map, 1., &mut first_result_matrix);
+    ndarray::linalg::general_mat_mul(1., &xb_a, &matrix_map, 0., &mut first_result_matrix);
 
-    println!("x*b_inverse*F: \n{}", first_result_matrix);
 
-    let mut final_result_matrix = Array2::zeros((1, 1));
-    ndarray::linalg::general_mat_mul(1., &first_result_matrix, &yb_a_t, 1., &mut final_result_matrix);
-    println!("Result: {}\n\n\n\n\n", final_result_matrix[[0,0]] as f64);
-
-    return Ok(final_result_matrix[[0,0]] as f64);
+    return Ok((first_result_matrix.dot(&yb_a_t))[[0, 0]]);
 }
 
 
