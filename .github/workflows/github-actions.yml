@@ -14,9 +14,9 @@ jobs:
       actions: read
     steps:
     - uses: actions/checkout@v3
-    - run: docker-compose -f ./Cluster/docker-compose.yml build
-    - run: docker-compose -f ./Cluster/docker-compose.yml up -d
-    - run: docker-compose -f ./Cluster/docker-compose.yml down
+    - run: docker compose -f ./Cluster/docker-compose.yml build
+    - run: docker compose -f ./Cluster/docker-compose.yml up -d
+    - run: docker compose -f ./Cluster/docker-compose.yml down
     - run: docker login ghcr.io -u ${{ github.repository_owner }} -p ${{ secrets.GITHUB_TOKEN }}       
     - uses: actions/delete-package-versions@v5
       with:
