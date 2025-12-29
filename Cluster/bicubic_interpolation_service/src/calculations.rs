@@ -100,7 +100,7 @@ pub fn bicubic_interpolation(arr_map: &[[f64;4]; 4], x: f64, y: f64) -> Result<f
     let b_a_t = b_a.t().to_owned();
 
 
-    let x_matrix = arr2(&[[x.powi(3), x.powi(2), x, 1.0]]);;
+    let x_matrix = arr2(&[[x.powi(3), x.powi(2), x, 1.0]]);
 
 
     let y_matrix = arr2(&[[y.powi(3)], [y.powi(2)], [y], [1.0]]);
