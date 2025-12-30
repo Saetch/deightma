@@ -1,5 +1,5 @@
 use ndarray::Array2;
-
+use ndarray::arr2;
 
 pub fn get_by_relative_index(arr: &[[f64;4]; 4], index_x: i32, index_y: i32 ) -> f64 {
     if index_x < -1 || index_x > 2 || index_y < -1 || index_y > 2 {
